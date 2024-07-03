@@ -41,6 +41,10 @@ async def category_autocomplete_nullable(interaction: discord.Interaction, curre
     return out
 
 
+def category_is_valid(category: str, guild_id: int) -> bool:
+    return category is None or CtfCategory.objects(name=category, guild_id=guild_id)
+
+
 def get_work_embeds(chall_db: Challenge):
     embeds = []
     for w in WORK_VALUES[1:]:
@@ -48,6 +52,7 @@ def get_work_embeds(chall_db: Challenge):
         if work_list:
             embeds.append(discord.Embed(color=w.color).add_field(name=w.name, value=", ".join(f"<@!{work.user}>" for work in work_list)))
     return embeds
+
 
 async def update_work_message(chall_db: Challenge, channel: Optional[discord.PartialMessageable]):
     if channel:
@@ -107,47 +112,77 @@ async def add(interaction: discord.Interaction, category: str, name: str):
                                                 f"wait for an admin to delete some channels. {admin_role.mention}",
                                                 allowed_mentions=discord.AllowedMentions.all())
         return
+
     incomplete_category = get_incomplete_category(interaction.guild)
 
-    ctf = sanitize_channel_name(ctf_db.name)
-    name = sanitize_channel_name(name)
-
-    if category:
-        category = sanitize_channel_name(category)
-        fullname = f"{ctf}-{category}-{name}"
-    else:
-        category = None
-        fullname = f"{ctf}-{name}"
-
+    # Check category is valid
+    category = sanitize_channel_name(category) if category else None
     settings = get_settings(interaction.guild)
-    if settings.enforce_categories:
-        if category is not None and not CtfCategory.objects(name=category, guild_id=interaction.guild_id):
-            raise app_commands.AppCommandError("Invalid CTF category")
+    if settings.enforce_categories and not category_is_valid(category, interaction.guild_id):
+        raise app_commands.AppCommandError("Invalid CTF category")
 
-    if old_chall := Challenge.objects(name=name, category=category, ctf=ctf_db).first():
-        if interaction.guild.get_channel(old_chall.channel_id):
-            raise app_commands.AppCommandError("A challenge with that name already exists")
-        else:
-            old_chall.delete()
+    ctf = sanitize_channel_name(ctf_db.name)
 
-    new_channel = await create_channel(fullname, interaction.channel.overwrites, incomplete_category)
-    work_message_id = None
-    if settings.send_work_message:
-        work_message = await new_channel.send(view=WorkView())
-        await work_message.pin()
-        work_message_id = work_message.id
+    class ChallengeInfoModal(ui.Modal, title="Add Challenge"):
+        name_field = ui.TextInput(
+            label="Name",
+            default=name,
+            placeholder="Challenge name"
+        )
+        category_field = ui.TextInput(
+            label="Category",
+            default=category,
+            placeholder="Challenge category"
+        )
+        description_field = ui.TextInput(
+            label="Description",
+            style=discord.TextStyle.paragraph,
+            placeholder="Challenge description",
+            max_length=1000
+        )
 
-    chall_db = Challenge(name=name, category=category, channel_id=new_channel.id, ctf=ctf_db, work_message=work_message_id)
-    chall_db.save()
+        async def on_submit(self, submit_interaction: discord.Interaction):
+            name = sanitize_channel_name(self.name_field.value)
+            if self.category_field.value:
+                category = sanitize_channel_name(self.category_field.value)
+                if settings.enforce_categories and not category_is_valid(category, interaction.guild_id):
+                    await submit_interaction.response.send_message("Invalid CTF category", ephemeral=True)
+                    return
+                channel_name = f"{ctf}-{category}-{name}"[:100]
+            else:
+                category = None
+                channel_name = f"{ctf}-{name}"[:100]
 
-    if category:
-        ctf_category = CtfCategory.objects(name=category, guild_id=interaction.guild_id).first()
-        if ctf_category is None:
-            ctf_category = CtfCategory(name=category, guild_id=interaction.guild_id, count=0)
-        ctf_category.count += 1
-        ctf_category.save()
+            if old_chall := Challenge.objects(name=name, category=category, ctf=ctf_db).first():
+                if interaction.guild.get_channel(old_chall.channel_id):
+                    await submit_interaction.response.send_message("A challenge with that name already exists", ephemeral=True)
+                    return
+                else:
+                    old_chall.delete()
 
-    await interaction.response.send_message("Added challenge {}".format(new_channel.mention))
+            new_channel = await create_channel(channel_name, interaction.channel.overwrites, incomplete_category)
+            await new_channel.send(f"# {self.name_field.value}\n\n{self.description_field.value}")
+
+            work_message_id = None
+            if settings.send_work_message:
+                work_message = await new_channel.send(view=WorkView())
+                await work_message.pin()
+                work_message_id = work_message.id
+
+            chall_db = Challenge(name=name, category=category, channel_id=new_channel.id, ctf=ctf_db, work_message=work_message_id)
+            chall_db.save()
+
+            if category:
+                ctf_category = CtfCategory.objects(name=category, guild_id=interaction.guild_id).first()
+                if ctf_category is None:
+                    ctf_category = CtfCategory(name=category, guild_id=interaction.guild_id, count=0)
+                ctf_category.count += 1
+                ctf_category.save()
+
+            await submit_interaction.response.send_message("Added challenge {}".format(new_channel.mention))
+
+    info = ChallengeInfoModal()
+    await interaction.response.send_modal(info)
 
 
 @app_commands.command(description="Marks a challenge as done")
@@ -159,6 +194,7 @@ async def done(interaction: discord.Interaction, contributors: Optional[str]):
     users = chall_db.solvers
     if interaction.user.id not in users:
         users.append(interaction.user.id)
+
     if contributors is not None:
         for user in [int(i) for i in re.findall(r'<@!?(\d+)>', contributors)]:
             if user not in users:
@@ -170,8 +206,27 @@ async def done(interaction: discord.Interaction, contributors: Optional[str]):
 
     await move_channel(interaction.channel, get_complete_category(interaction.guild))
 
-    msg = ":tada: {} was solved by ".format(interaction.channel.mention) + " ".join(f"<@!{user}>" for user in users) + " !"
-    await interaction.guild.get_channel(ctf_db.channel_id).send(msg)
+    # Special emojis for certain users, otherwise default
+    emojis = {
+        286173785336446978: (":fire:", "firepog"),  # firehawk
+        112158630161158144: (":punch:", "noshell"),  # N1z0ku
+        145301884662448128: (":flag_no:", "chadtor"),  # Victor4X
+        634877910511255575: (":lemon: :last_quarter_moon_with_face:", "lightsaberpepe"),  # Anakin
+    }
+    msg_emoji = ":tada:"
+    reaction_emoji = "peepoBrunner"
+
+    if len(users) == 1 and users[0] in emojis:
+        msg_emoji, reaction_emoji = emojis[users[0]]
+
+    solvers = " ".join(f"<@!{user}>" for user in users)
+    msg = f"{msg_emoji}  {interaction.channel.mention} was solved by {solvers}!  {msg_emoji}"
+    sent_msg = await interaction.guild.get_channel(ctf_db.channel_id).send(msg)
+
+    # Pre-react to solver message
+    emoji = discord.utils.get(interaction.guild.emojis, name=reaction_emoji)
+    await sent_msg.add_reaction(emoji)
+
     await interaction.response.send_message("Challenge moved to done!")
 
 
