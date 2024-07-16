@@ -1,47 +1,135 @@
-# PsyBot
-A discord bot that provides tools for collaboration in CTFs. Inspired by [fiskebot](https://github.com/ekofiskctf/fiskebot)
+# BrunnerBot
+
+A Discord bot that provides tools for collaboration during CTFs.
+
+Forked from [PsyBot](https://github.com/Myldero/psybot), originally inspired by [fiskebot](https://github.com/ekofiskctf/fiskebot).
 
 ## Features
-* Create a CTF with `/ctf create <name> [ctftime_link]`. When a CTFTime link is supplied, most information is automatically entered. <br />
-  When `private` is set, team members are not automatically added to the CTF and will have to be invited with the `/invite` command.
-* Create categories to be used with challenges using `/category create <name>`
-* Create channels for individual challenges with `/add <category> <name>`
-* Set working status on a challenge using the button in the channel, with `/working set Working` or the shortcut `/w`
-* `/working table` to see who is working on which challenges
-* Mark a challenge as done with `/done [contributors]`
-* `/note` to create a note that can be edited by multiple people using HedgeDoc.
-* `/note modal` to create a note that can be edited from within discord. Simultaneous changes will be merged together using diff-match-patch. 
-* `/ctf archive` to archive old ctfs
-* `/ctf export` to save all the channels of a ctf as a json file. <br />
-  Use in conjunction with `/ctf delete` to free up channels when reaching the 500 channel limit.
-* `/ctftime team` to see your team's top 10 CTFs. <br />
-  Set your team name with `/psybot set key:ctftime_team value:kalmarunionen`
+
+BrunnerBot adds a number of slash commands for easy and effective CTF management and collaboration:
+
+### CTFs
+
+* `/ctf create <name> [ctftime] [private]`: Create a new CTF
+  * Creates a new CTF channel and provides access for team members
+    * `/invite <user>`: Add a new player
+    * `/remove <user>`: Remove a current player - players can leave manually with `/leave`
+  * When a CTFtime link is supplied, most CTF information is automatically entered
+    * Manually update info such as team credentials with `/ctf update <field> <value>`
+  * When `private` is set, team members are not automatically added to the CTF and must all be invited with `/invite`
+  * `/ctf rename <name>`: Rename CTF if needed - very short names recommended to fit in channel list
+* `/add <category> <name>`: Create new challenge (description is entered in popup modal)
+  * Creates a new channel under `INCOMPLETE CHALLENGES`
+  * `category` is a selection list, create new with `/category create <category>`, delete with `/category delete <category>`
+* `/note [type]`: Create challenge note
+  * Lets all team members edit the same persistent note
+  * Default `type` is `doc`, creates an external HedgeDoc markdown note
+  * Use `type:modal` for an embedded note in the channel
+    * Notes can be edited, pinned, and moved down to stay the most recent
+    * Simultaneous changes are merged with diff-match-patch
+* `/working set <status>`: Set working status (`/w` short for `/working set Working`)
+  * Or simply click the `Set Working` button in the challenge channel
+  * Get an overview with `/working table`
+* `/done [contributors]`: Mark a challenge as done
+  * Moves the challenge to `COMPLETE CHALLENGES` and sends a notification mentioning all contributors
+  * Use `/undone` to move the challenge back if wrongly marked
+* `/ctf archive`: Archive a CTF
+  * Unarchive if needed with `/ctf unarchive`
+* `/ctf export`: Export a CTF
+  * Exports all CTF channels to JSON format, files are *not* currently exported
+  * Both running and archived CTFs can be exported
+* `/ctf delete [security]`: Delete a CTF
+  * Asks for CTF name as a sanity check if not input as `security`
+
+### CTFtime
+
+* `/ctftime team [team] [year]`: See a team's top 10 CTFs
+  * Defaults to current year and your team
+  * Set team with `/bot set key:ctftime_team value:Brunnerne`
+* `/ctftime top [country] [year]`: See the top CTFtime teams
+  * Defaults to this year, globally
+* `/ctftime calc <weight> <best_points> <team_points> <team_place> [team]`
+  * Use CTFtime's rating formula to compute points for a CTF
+  * Shows how this would affect your team's total points
+
+**NOTE:** Since CTFtime moved behind CloudFlare, `/ctftime top` has not been working as it was scraping the site for the information.
+The two other commands can use the CTFtime API and still work as intended.
+
 ## Installation
-First, you need to create a bot on https://discord.com/developers/applications. \
-Then invite it with the following link, replacing `CLIENT_ID` with your actual id:
-https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=8&scope=bot%20applications.commands
+
+First, create a bot on [https://discord.com/developers/applications](https://discord.com/developers/applications).
+
+Invite the bot to your server with the following link, replacing `CLIENT_ID` with your actual id:
+[https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=8&scope=bot%20applications.commands](https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=8&scope=bot%20applications.commands).
 
 ### With `docker-compose`
-Create a `.env` file like this:
-```
+
+Create a `.env` file with your newly created bot's token and optionally your server's guild ID:
+
+```dotenv
 BOT_TOKEN=token
-GUILD_ID=optional_guild_id
+GUILD_ID=guild_id
 ```
-Create the backups directory
+
+Create backups directory:
+
 ```sh
-mkdir ./backups; chown 1000:1000 ./backups
+mkdir ./backups
+chown 1000:1000 ./backups
 ```
-Then run `docker-compose up -d`
+
+Then run `docker compose up -d`
 
 ### Manually
-Install dependencies with pip
+
+Install dependencies with `pip`
+
 ```sh
 python3 -m pip install -r requirements.txt
 ```
-Install MongoDB and set it up. \
+
+Install MongoDB and set it up.
+
 Set up `BOT_TOKEN` and optionally `GUILD_ID` environment variables.
 
-Run the script
+Run the Python script
+
 ```sh
-./bot.py
+python3 bot.py
 ```
+
+## Configuration
+
+The bot has a number of settings that can be modified to match your server's needs.
+Use `/bot info` to see all the current value for all settings and `/bot set <key> <value>` to modify these.
+
+Only bot admins can view and change settings, this role is created when the bot is run (`Team Admin` by default) and set as `admin_role`.
+To change settings, you must first give yourself this bot admin role.
+Afterwards, the admin and team roles can optionally be set to some of your existing server roles and the auto-generated roles be deleted.
+
+Settings:
+
+* `team_role`: ID of CTF team role, auto-generated by default as `@Team Member`
+  * By default, all users with this role get access to new CTFs, unless marked with `private:True`
+* `admin_role`: ID of CTF admin role
+  * Only admins can create, archive, export, and delete CTFs, create and delete categories, and view and modify settings
+* `ctfs_category`: Discord category for created CTFs, default `CTFS`
+* `incomplete_category`: Discord category for incomplete challenges, default `INCOMPLETE_CHALLENGES`
+* `complete_category`: Discord category for complete challenges, default `COMPLETE_CHALLENGES`
+* `archive_category`: Discord category for archived challenges, default `ARCHIVE`
+* `ctf_archive_category`: Discord category for archived CTF main channels, default `ARCHIVED CTFS`
+* `export_channel`: Channel ID for JSON export uploads
+* `enforce_categories (default True)`: Players must choose a category from the existing list
+  * New categories can be created by team admins
+  * If false, players get the selection options but can type any category they want
+  * Custom categories are then automatically added to the option list
+* `send_work_message (default True)`: Send a message in each new challenge channel with a "Set Working" button
+* `use_team_role_as_acl (default False)`: Use `team_role` directly as access control for public CTFs
+  * If false, a new role is instead created per CTF for fine-grained access control
+    * This role is automatically given to every player with `team_role` for immediate access
+    * New players can be invited with `/invite` and can manually leave with `/leave` or be removed by an admin with `/remove`
+    * This makes it much easier to allow guest players or let members leave if they plan on playing with another team
+  * The setting has no effect on private CTFs, a new role is *always* created for these
+    * But all players must be manually invited, team members do not get the new role automatically
+* `hedgedoc_url`: URL for HedgeDoc notes, defaults to [https://demo.hedgedoc.org/](https://demo.hedgedoc.org/)
+* `ctftime_team`: CTFtime team name, used by default by `/ctftime` commands if set
