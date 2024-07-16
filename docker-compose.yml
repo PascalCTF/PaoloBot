@@ -1,14 +1,14 @@
 services:
-  psybot:
+  brunnerbot:
     build: .
     env_file:
       - ./.env
     environment:
       - "MONGODB_URI=mongo"
-      - "BACKUPS_DIR=/home/psybot/backups"
+      - "BACKUPS_DIR=/home/brunnerbot/backups"
     restart: unless-stopped
     volumes:
-      - ./backups:/home/psybot/backups
+      - ./backups:/home/brunnerbot/backups
     depends_on:
       - mongo
   mongo:

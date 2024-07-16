@@ -4,7 +4,7 @@ import discord
 from discord import app_commands
 from mongoengine import ValidationError
 
-from psybot.utils import is_team_admin, get_settings, MAX_CHANNELS
+from brunnerbot.utils import is_team_admin, get_settings, MAX_CHANNELS
 
 
 async def check_role(guild: discord.Guild, value: str):

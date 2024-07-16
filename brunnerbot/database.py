@@ -1,4 +1,4 @@
-from psybot.config import config
+from brunnerbot.config import config
 
 from mongoengine import connect
 

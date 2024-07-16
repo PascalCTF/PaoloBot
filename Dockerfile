@@ -2,8 +2,8 @@ FROM python:3.12.4-slim
 
 RUN apt-get update
 
-ENV NAME psybot
-ENV APP_HOME /home/psybot
+ENV NAME brunnerbot
+ENV APP_HOME /home/brunnerbot
 
 RUN groupadd -g 1000 -r ${NAME} && useradd -r -g ${NAME} -u 1000 ${NAME}
 
@@ -17,7 +17,7 @@ RUN chown ${NAME}:${NAME} ${APP_HOME}
 
 USER ${NAME}
 
-COPY --chown=${NAME}:${NAME} ./psybot/ ${APP_HOME}/psybot/
+COPY --chown=${NAME}:${NAME} ./brunnerbot/ ${APP_HOME}/brunnerbot/
 COPY --chown=${NAME}:${NAME} ./bot.py ${APP_HOME}/
 
 CMD ["python", "-u", "bot.py"]

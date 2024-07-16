@@ -5,10 +5,10 @@ import discord
 import pymongo.errors
 from discord import app_commands
 
-from psybot.modules import ctf, ctftime, challenge, notes, bot
-from psybot.config import config
-from psybot.database import db
-from psybot.utils import setup_settings
+from brunnerbot.modules import ctf, ctftime, challenge, notes, bot
+from brunnerbot.config import config
+from brunnerbot.database import db
+from brunnerbot.utils import setup_settings
 
 logging.basicConfig(level=logging.INFO)
 

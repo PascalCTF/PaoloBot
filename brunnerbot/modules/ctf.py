@@ -8,12 +8,12 @@ import discord
 from discord import app_commands
 from discord import ui
 
-from psybot.utils import *
-from psybot.modules.ctftime import Ctftime
-from psybot.config import config
+from brunnerbot.utils import *
+from brunnerbot.modules.ctftime import Ctftime
+from brunnerbot.config import config
 
-from psybot.models.challenge import Challenge
-from psybot.models.ctf import Ctf
+from brunnerbot.models.challenge import Challenge
+from brunnerbot.models.ctf import Ctf
 
 
 async def get_ctf_db(interaction: discord.Interaction, archived: Optional[bool] = False, allow_chall: bool = True) -> Ctf:

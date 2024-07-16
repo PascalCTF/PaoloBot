@@ -1,6 +1,6 @@
 from mongoengine import Document, StringField, IntField, BooleanField, ListField, ReferenceField, LongField, MapField, \
     EmbeddedDocumentListField, EmbeddedDocument
-from psybot.models.ctf import Ctf
+from brunnerbot.models.ctf import Ctf
 
 
 class Working(EmbeddedDocument):

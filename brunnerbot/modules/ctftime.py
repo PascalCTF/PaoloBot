@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 import datetime
 from tabulate import tabulate
 
-from psybot.utils import get_settings
+from brunnerbot.utils import get_settings
 
 
 class Ctftime(app_commands.Group):

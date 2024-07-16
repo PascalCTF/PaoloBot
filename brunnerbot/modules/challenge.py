@@ -9,13 +9,13 @@ from mongoengine import NotUniqueError
 import matplotlib.pyplot as plt
 from matplotlib.table import Table, Cell
 
-from psybot.models.ctf_category import CtfCategory
-from psybot.utils import move_channel, is_team_admin, get_incomplete_category, create_channel, get_complete_category, \
+from brunnerbot.models.ctf_category import CtfCategory
+from brunnerbot.utils import move_channel, is_team_admin, get_incomplete_category, create_channel, get_complete_category, \
     get_admin_role, sanitize_channel_name, get_settings, MAX_CHANNELS
-from psybot.modules.ctf import get_ctf_db
+from brunnerbot.modules.ctf import get_ctf_db
 
-from psybot.models.challenge import Challenge
-from psybot.models.ctf import Ctf
+from brunnerbot.models.challenge import Challenge
+from brunnerbot.models.ctf import Ctf
 
 
 async def check_challenge(interaction: discord.Interaction) -> Tuple[Optional[Challenge], Optional[Ctf]]:
