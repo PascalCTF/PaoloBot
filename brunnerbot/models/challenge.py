@@ -1,5 +1,14 @@
-from mongoengine import Document, StringField, IntField, BooleanField, ListField, ReferenceField, LongField, MapField, \
-    EmbeddedDocumentListField, EmbeddedDocument
+from mongoengine import (
+    Document,
+    StringField,
+    IntField,
+    BooleanField,
+    ListField,
+    ReferenceField,
+    LongField,
+    EmbeddedDocumentListField,
+    EmbeddedDocument
+)
 from brunnerbot.models.ctf import Ctf
 
 
@@ -18,10 +27,10 @@ class Challenge(Document):
     working = EmbeddedDocumentListField(Working)
     solved = BooleanField(required=True, default=False)
     meta = {
-        'indexes': [
+        "indexes": [
             {
-                'fields': ['channel_id'],
-                'unique': True
+                "fields": ["channel_id"],
+                "unique": True
             }
         ]
     }

@@ -10,15 +10,26 @@ import matplotlib.pyplot as plt
 from matplotlib.table import Table, Cell
 
 from brunnerbot.models.ctf_category import CtfCategory
-from brunnerbot.utils import move_channel, is_team_admin, get_incomplete_category, create_channel, get_complete_category, \
-    get_admin_role, sanitize_channel_name, get_settings, MAX_CHANNELS
+from brunnerbot.utils import (
+    move_channel,
+    is_team_admin,
+    get_incomplete_category,
+    create_channel,
+    get_complete_category,
+    get_admin_role,
+    sanitize_channel_name,
+    get_settings,
+    MAX_CHANNELS
+)
 from brunnerbot.modules.ctf import get_ctf_db
 
 from brunnerbot.models.challenge import Challenge
 from brunnerbot.models.ctf import Ctf
 
 
-async def check_challenge(interaction: discord.Interaction) -> tuple[Challenge | None, Ctf | None]:
+async def check_challenge(
+    interaction: discord.Interaction
+) -> tuple[Challenge | None, Ctf | None]:
     chall_db: Challenge = Challenge.objects(channel_id=interaction.channel_id).first()
     if chall_db is None:
         raise app_commands.AppCommandError("Not a challenge!")
@@ -28,16 +39,25 @@ async def check_challenge(interaction: discord.Interaction) -> tuple[Challenge |
     return chall_db, ctf_db
 
 
-async def category_autocomplete(interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+async def category_autocomplete(
+    interaction: discord.Interaction,
+    current: str
+) -> list[app_commands.Choice[str]]:
     current = sanitize_channel_name(current)
-    query = CtfCategory.objects(name=re.compile("^" + re.escape(current)), guild_id=interaction.guild_id).order_by('-count')[:25]
+    query = CtfCategory.objects(
+        name=re.compile("^" + re.escape(current)),
+        guild_id=interaction.guild_id
+    ).order_by("-count")[:25]
     return [app_commands.Choice(name=c["name"], value=c["name"]) for c in query]
 
 
-async def category_autocomplete_nullable(interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+async def category_autocomplete_nullable(
+    interaction: discord.Interaction,
+    current: str
+) -> list[app_commands.Choice[str]]:
     out = await category_autocomplete(interaction, current)
     if len(out) < 25 and "none".startswith(current):
-        out.append(app_commands.Choice(name='None', value=''))
+        out.append(app_commands.Choice(name="None", value=""))
     return out
 
 
@@ -47,10 +67,13 @@ def category_is_valid(category: str, guild_id: int) -> bool:
 
 def get_work_embeds(chall_db: Challenge):
     embeds = []
-    for w in WORK_VALUES[1:]:
-        work_list = chall_db.working.filter(value=w.value)
+    for work_value in WORK_VALUES[1:]:
+        work_list = chall_db.working.filter(value=work_value.value)
         if work_list:
-            embeds.append(discord.Embed(color=w.color).add_field(name=w.name, value=", ".join(f"<@!{work.user}>" for work in work_list)))
+            embeds.append(discord.Embed(color=work_value.color).add_field(
+                name=work_value.name,
+                value=", ".join(f"<@!{work.user}>" for work in work_list)
+            ))
     return embeds
 
 
@@ -93,7 +116,12 @@ class WorkView(ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @ui.button(label="Set Working", emoji="🛠️", style=discord.ButtonStyle.success, custom_id='work_view:set_working')
+    @ui.button(
+        label="Set Working",
+        emoji="🛠️",
+        style=discord.ButtonStyle.success,
+        custom_id="work_view:set_working"
+    )
     async def set_working(self, interaction: discord.Interaction, _button: ui.Button):
         chall_db, ctf_db = await check_challenge(interaction)
         await move_work(interaction.guild, ctf_db, chall_db, interaction.user)
@@ -108,9 +136,11 @@ async def add(interaction: discord.Interaction, category: str, name: str):
 
     if len(interaction.guild.channels) >= MAX_CHANNELS - 3:
         admin_role = get_admin_role(interaction.guild)
-        await interaction.response.send_message(f"There are too many channels on this discord server. Please "
-                                                f"wait for an admin to delete some channels. {admin_role.mention}",
-                                                allowed_mentions=discord.AllowedMentions.all())
+        await interaction.response.send_message(
+            "There are too many channels on this discord server. "
+            f"Please wait for an admin to delete some channels. {admin_role.mention}",
+            allowed_mentions=discord.AllowedMentions.all()
+        )
         return
 
     incomplete_category = get_incomplete_category(interaction.guild)
@@ -145,8 +175,12 @@ async def add(interaction: discord.Interaction, category: str, name: str):
             name = sanitize_channel_name(self.name_field.value)
             if self.category_field.value:
                 category = sanitize_channel_name(self.category_field.value)
-                if settings.enforce_categories and not category_is_valid(category, interaction.guild_id):
-                    await submit_interaction.response.send_message("Invalid CTF category", ephemeral=True)
+                valid_category = category_is_valid(category, interaction.guild_id)
+                if settings.enforce_categories and not valid_category:
+                    await submit_interaction.response.send_message(
+                        "Invalid CTF category",
+                        ephemeral=True
+                    )
                     return
                 channel_name = f"{ctf}-{category}-{name}"[:100]
             else:
@@ -155,12 +189,18 @@ async def add(interaction: discord.Interaction, category: str, name: str):
 
             if old_chall := Challenge.objects(name=name, category=category, ctf=ctf_db).first():
                 if interaction.guild.get_channel(old_chall.channel_id):
-                    await submit_interaction.response.send_message("A challenge with that name already exists", ephemeral=True)
+                    await submit_interaction.response.send_message(
+                        "A challenge with that name already exists",
+                        ephemeral=True
+                    )
                     return
-                else:
-                    old_chall.delete()
+                old_chall.delete()
 
-            new_channel = await create_channel(channel_name, interaction.channel.overwrites, incomplete_category)
+            new_channel = await create_channel(
+                channel_name,
+                interaction.channel.overwrites,
+                incomplete_category
+            )
             await new_channel.send(f"# {self.name_field.value}\n\n{self.description_field.value}")
 
             work_message_id = None
@@ -169,17 +209,32 @@ async def add(interaction: discord.Interaction, category: str, name: str):
                 await work_message.pin()
                 work_message_id = work_message.id
 
-            chall_db = Challenge(name=name, category=category, channel_id=new_channel.id, ctf=ctf_db, work_message=work_message_id)
+            chall_db = Challenge(
+                name=name,
+                category=category,
+                channel_id=new_channel.id,
+                ctf=ctf_db,
+                work_message=work_message_id
+            )
             chall_db.save()
 
             if category:
-                ctf_category = CtfCategory.objects(name=category, guild_id=interaction.guild_id).first()
+                ctf_category = CtfCategory.objects(
+                    name=category,
+                    guild_id=interaction.guild_id
+                ).first()
                 if ctf_category is None:
-                    ctf_category = CtfCategory(name=category, guild_id=interaction.guild_id, count=0)
+                    ctf_category = CtfCategory(
+                        name=category,
+                        guild_id=interaction.guild_id,
+                        count=0
+                    )
                 ctf_category.count += 1
                 ctf_category.save()
 
-            await submit_interaction.response.send_message("Added challenge {}".format(new_channel.mention))
+            await submit_interaction.response.send_message(
+                f"Added challenge {new_channel.mention}"
+            )
 
     info = ChallengeInfoModal()
     await interaction.response.send_modal(info)
@@ -196,7 +251,7 @@ async def done(interaction: discord.Interaction, contributors: str | None):
         users.append(interaction.user.id)
 
     if contributors is not None:
-        for user in [int(i) for i in re.findall(r'<@!?(\d+)>', contributors)]:
+        for user in [int(i) for i in re.findall(r"<@!?(\d+)>", contributors)]:
             if user not in users:
                 users.append(user)
 
@@ -236,7 +291,7 @@ async def done(interaction: discord.Interaction, contributors: str | None):
 @app_commands.command(description="Marks a challenge as undone")
 @app_commands.guild_only
 async def undone(interaction: discord.Interaction):
-    chall_db, ctf_db = await check_challenge(interaction)
+    chall_db, _ = await check_challenge(interaction)
     assert isinstance(interaction.channel, discord.TextChannel)
 
     if not chall_db.solved:
@@ -269,7 +324,10 @@ class CategoryCommands(app_commands.Group):
     @app_commands.guild_only
     @app_commands.check(is_team_admin)
     async def delete(self, interaction: discord.Interaction, category: str):
-        ctf_category: CtfCategory = CtfCategory.objects(name=category, guild_id=interaction.guild_id).first()
+        ctf_category: CtfCategory = CtfCategory.objects(
+            name=category,
+            guild_id=interaction.guild_id
+        ).first()
         if ctf_category is None:
             await interaction.response.send_message("Unknown CTF category", ephemeral=True)
         else:
@@ -284,7 +342,7 @@ class WorkValue:
         self.name = name
 
     def hex_color(self):
-        return f'#{self.color:06x}'
+        return f"#{self.color:06x}"
 
     def __str__(self):
         return self.name
@@ -302,29 +360,42 @@ def export_table(solves: dict[discord.Member, list[int]], challs: list[str], fil
     height = len(challs)
     width = len(solves)
 
-    fig, ax = plt.subplots(figsize=(width * (CELL_WIDTH if has_names else CELL_HEIGHT), height * CELL_HEIGHT))
-    ax.axis('off')
+    fig, ax = plt.subplots(
+        figsize=(
+            width * (CELL_WIDTH if has_names else CELL_HEIGHT),
+            height * CELL_HEIGHT
+        )
+    )
+    ax.axis("off")
     tbl = Table(ax, loc="center")
 
-    def add_cell(r, c, text=None, color='w', loc='center', edges='closed'):
-        tbl[r, c] = Cell((r, c), text=text, facecolor=color, edgecolor=color, width=1 / width, height=1 / height,
-                         loc=loc, visible_edges=edges)
+    def add_cell(r, c, text=None, color="w", loc="center", edges="closed"):
+        tbl[r, c] = Cell(
+            (r, c),
+            text=text,
+            facecolor=color,
+            edgecolor=color,
+            width=1 / width,
+            height=1 / height,
+            loc=loc,
+            visible_edges=edges
+        )
 
     for row, name in enumerate(challs):
-        add_cell(row + 1, 0, text=name, loc='left')
+        add_cell(row + 1, 0, text=name, loc="left")
 
     for col, user in enumerate(solves.keys()):
-        nm = user.nick if hasattr(user, 'nick') and user.nick else user.name
-        add_cell(0, col + 1, text=nm if has_names else None, edges='B', color='black')
+        nm = user.nick if hasattr(user, "nick") and user.nick else user.name
+        add_cell(0, col + 1, text=nm if has_names else None, edges="B", color="black")
         if has_names:
             tbl[0, col + 1].auto_set_font_size(fig.canvas.get_renderer())
         for row, val in enumerate(solves[user]):
-            color = WORK_VALUES[val].hex_color() if 0 <= val < len(WORK_VALUES) else 'w'
+            color = WORK_VALUES[val].hex_color() if 0 <= val < len(WORK_VALUES) else "w"
             add_cell(row + 1, col + 1, color=color)
     tbl.auto_set_column_width(0)
     tbl.auto_set_font_size(False)
     ax.add_table(tbl)
-    plt.savefig(filename, bbox_inches='tight', pad_inches=0)
+    plt.savefig(filename, bbox_inches="tight", pad_inches=0)
 
 
 @app_commands.command(description="Shortcut to set working status on the challenge")
@@ -333,25 +404,35 @@ async def w(interaction: discord.Interaction):
     chall_db, ctf_db = await check_challenge(interaction)
     assert isinstance(interaction.channel, discord.TextChannel)
     await move_work(interaction.guild, ctf_db, chall_db, interaction.user)
-    await interaction.response.send_message(f"Updated working status to Working", ephemeral=True)
+    await interaction.response.send_message("Updated working status to Working", ephemeral=True)
 
 
 class WorkingCommands(app_commands.Group):
     @app_commands.command(description="Set working status on the challenge")
-    @app_commands.choices(value=[app_commands.Choice(name=w.name, value=w.value) for w in WORK_VALUES])
+    @app_commands.choices(
+        value=[app_commands.Choice(name=w.name, value=w.value) for w in WORK_VALUES]
+    )
     @app_commands.guild_only
     async def set(self, interaction: discord.Interaction, value: int, user: discord.Member | None):
-        chall_db, ctf_db = await check_challenge(interaction)
+        chall_db, _ = await check_challenge(interaction)
         await set_work(interaction.guild, chall_db, user or interaction.user, value)
-        await interaction.response.send_message(f"Updated working status to {WORK_VALUES[value]}", ephemeral=True)
+        await interaction.response.send_message(
+            f"Updated working status to {WORK_VALUES[value]}",
+            ephemeral=True
+        )
 
     @app_commands.command(description="Get list of people working on the challenge")
     @app_commands.guild_only
     async def get(self, interaction: discord.Interaction):
-        chall_db, ctf_db = await check_challenge(interaction)
+        chall_db, _ = await check_challenge(interaction)
         embeds = get_work_embeds(chall_db)
-        await interaction.response.send_message("" if embeds else "Nobody is working on this", embeds=embeds, view=WorkView(),
-                                                ephemeral=True, allowed_mentions=discord.AllowedMentions.none())
+        await interaction.response.send_message(
+            "" if embeds else "Nobody is working on this",
+            embeds=embeds,
+            view=WorkView(),
+            ephemeral=True,
+            allowed_mentions=discord.AllowedMentions.none()
+        )
 
     @app_commands.command(description="Get table of all work on challenges")
     @app_commands.guild_only
@@ -364,7 +445,7 @@ class WorkingCommands(app_commands.Group):
             challs = Challenge.objects(ctf=ctf_db)
         else:
             challs = Challenge.objects(ctf=ctf_db, solved=False)
-        sorted_challs = sorted(challs, key=lambda x: (x.category or '', x.name))
+        sorted_challs = sorted(challs, key=lambda x: (x.category or "", x.name))
 
         # Filter out deleted challs
         challs = []
@@ -384,12 +465,21 @@ class WorkingCommands(app_commands.Group):
                 tbl[user][i] = work.value
 
         if not tbl:
-            await interaction.edit_original_response(content="No work has been done on any challenges yet")
+            await interaction.edit_original_response(
+                content="No work has been done on any challenges yet"
+            )
             return
 
         with tempfile.TemporaryDirectory() as tmp:
             filename = Path(tmp) / "overview.png"
-            export_table(tbl, [(chall.category + "-" if chall.category else '') + chall.name for chall in challs], filename)
+            export_table(
+                tbl,
+                [
+                    (chall.category + "-" if chall.category else "") + chall.name
+                    for chall in challs
+                ],
+                filename
+            )
             await interaction.edit_original_response(attachments=[discord.File(filename)])
 
 
