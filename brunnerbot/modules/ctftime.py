@@ -121,33 +121,32 @@ class Ctftime(app_commands.Group):
         if country and (len(country) != 2 or not country.isalpha()):
             raise app_commands.AppCommandError("Invalid country. Use the alpha-2 country code")
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                f"https://ctftime.org/stats/{year}/{country.upper()}"
-            ) as response:
-                if response.status != 200:
-                    raise app_commands.AppCommandError("Unknown country")
+        stats_url = f"https://ctftime.org/stats/{year}/"
+        if country is not None:
+            stats_url += f"{country.upper()}"
 
-                html = await response.text()
-                soup = BeautifulSoup(html, "html.parser")
+        async with aiohttp.ClientSession() as session, session.get(stats_url) as response:
+            if response.status != 200:
+                raise app_commands.AppCommandError("Unknown country")
 
-                if country:
-                    country_name = soup.find(class_="flag").parent.text.strip()
+            html = await response.text()
+            soup = BeautifulSoup(html, "html.parser")
 
-                headers, tbl = self.get_table_from_html(soup.find("table"))
-
-        if country:
-            out = f"**Showing top teams for {country_name}** :flag_{country.lower()}:"
+        if country is None:
+            out = "**Showing top teams globally**"
         else:
-            out = "**Showing top teams**"
+            country_name = soup.find(class_="flag").parent.text.strip()
+            out = f"**Showing top teams for {country_name}** :flag_{country.lower()}:"
 
         if year != datetime.now().year:
             out += f" **({year})**"
 
+        headers, tbl = self.get_table_from_html(soup.find("table"))
         out += "\n```\n"
         out += tabulate(tbl, headers=headers, floatfmt=".03f")
 
-        while len(out) > 2000-4:
+        # Truncate if needed
+        while len(out) > 2000 - 4:
             out = out[:out.rfind("\n")]
 
         out += "\n```"

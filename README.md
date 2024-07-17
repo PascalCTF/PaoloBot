@@ -54,9 +54,6 @@ BrunnerBot adds a number of slash commands for easy and effective CTF management
   * Use CTFtime's rating formula to compute points for a CTF
   * Shows how this would affect your team's total points
 
-**NOTE:** Since CTFtime moved behind CloudFlare, `/ctftime top` has not been working as it was scraping the site for the information.
-The two other commands can use the CTFtime API and still work as intended.
-
 ## Installation
 
 First, create a bot on [https://discord.com/developers/applications](https://discord.com/developers/applications).
