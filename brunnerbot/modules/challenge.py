@@ -1,7 +1,8 @@
-import os
 import re
 import tempfile
 from typing import Optional, Tuple, List, Dict
+
+from pathlib import Path
 
 from discord import app_commands, ui
 import discord
@@ -392,7 +393,7 @@ class WorkingCommands(app_commands.Group):
             return
 
         with tempfile.TemporaryDirectory() as tmp:
-            filename = os.path.join(tmp, 'overview.png')
+            filename = Path(tmp) / "overview.png"
             export_table(tbl, [(chall.category + "-" if chall.category else '') + chall.name for chall in challs], filename)
             await interaction.edit_original_response(attachments=[discord.File(filename)])
 

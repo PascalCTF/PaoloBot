@@ -1,7 +1,8 @@
 import datetime
 import json
-import os.path
 import re
+
+from pathlib import Path
 from typing import List, Optional, Union
 
 import discord
@@ -312,17 +313,15 @@ class CtfCommands(app_commands.Group):
 
         ctf_export = await export_channels(channels)
 
-        filepath = os.path.join(config.backups_dir, str(interaction.guild_id), f"{interaction.channel_id}_{ctf_db.name}.json")
-        try:
-            os.makedirs(os.path.dirname(filepath))
-        except OSError:
-            pass
+        export_dir = Path(config.backups_dir) / str(interaction.guild_id)
+        export_dir.mkdir(exist_ok=True)
 
+        filepath = export_dir / f"{interaction.channel_id}_{ctf_db.name}.json"
         try:
             with open(filepath, 'w') as f:
                 f.write(json.dumps(ctf_export, separators=(",", ":")))
         except FileNotFoundError:
-            # This is due to os.makedirs not succeeding
+            # Export dir was not created
             await interaction.edit_original_response(content=f"Invalid file permissions when exporting CTF")
             return
 

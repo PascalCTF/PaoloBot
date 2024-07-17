@@ -1,6 +1,8 @@
 import logging
 import os
 
+from pathlib import Path
+
 
 def parse_variable(variable, vartype, default=None, required=False):
     value = os.getenv(variable, None)
@@ -16,9 +18,10 @@ def parse_variable(variable, vartype, default=None, required=False):
         return True if value.lower() in ["true", "1", "t", "y", "yes"] else False
     elif vartype == int:
         return int(value) if value.isdigit() else default
+    return default
 
 
-BACKUPS_DIR_DEFAULT = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../backups'))
+BACKUPS_DIR_DEFAULT = (Path(__file__).parent.parent / "backups").resolve()
 
 class Config:
     def __init__(self):
