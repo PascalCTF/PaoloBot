@@ -111,17 +111,25 @@ async def export_channels(channels: list[discord.TextChannel]):
 
 
 def create_info_message(info):
-    msg = discord.utils.escape_mentions(info["title"])
+    msg = f"## {discord.utils.escape_mentions(info['title'])}"
+
     if "start" in info or "end" in info:
         msg += "\n"
     if "start" in info:
-        msg += f"\n**START** <t:{info['start']}:R> <t:{info['start']}>"
+        msg += f"\n**START:** <t:{info['start']}:R> <t:{info['start']}>"
     if "end" in info:
-        msg += f"\n**END** <t:{info['end']}:R> <t:{info['end']}>"
+        msg += f"\n**END:** <t:{info['end']}:R> <t:{info['end']}>"
+
+    if "url" in info or "discord" in info:
+        msg += "\n"
     if "url" in info:
-        msg += f"\n\n{info['url']}"
+        msg += f"\nCTF Link: {info['url']}"
+    if "discord" in info:
+        msg += f"\nDiscord: {info['discord']}"
+
     if "creds" in info:
-        msg += "\n\n**CREDENTIALS**\n" + discord.utils.escape_mentions(info["creds"])
+        msg += f"\n\n### CREDENTIALS\n\n{discord.utils.escape_mentions(info['creds'])}"
+
     return msg
 
 
@@ -140,7 +148,38 @@ class CtfCommands(app_commands.Group):
             raise app_commands.AppCommandError("There are too many channels on this discord server")
         name = sanitize_channel_name(name)
 
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
+
+        if existing_ctf := Ctf.objects(name=name).first():
+            if interaction.guild.get_channel(existing_ctf.channel_id):
+                await interaction.edit_original_response(
+                    content="A CTF with that name already exists"
+                )
+                return
+
+            # If found in DB but channel no longer exists, it's been deleted through Discord
+            # Remove all challenges that have no corresponding channel
+            for chall in Challenge.objects(ctf=existing_ctf):
+                if not interaction.guild.get_channel(chall.channel_id):
+                    chall.delete()
+
+            # Check if any channels remain
+            if Challenge.objects(ctf=existing_ctf).first() is not None:
+                await interaction.edit_original_response(
+                    content="Challenges from a CTF with that name still exist!\n"
+                    "Please inspect all remains and force delete before retrying:\n"
+                    f"`/ctf delete security:{name} force:True`"
+                )
+                return
+
+            # Else delete the CTF and corresponding role
+            try:
+                await interaction.guild.get_role(existing_ctf.role_id).delete(
+                    reason="Deleted CTF channels"
+                )
+            except AttributeError:
+                pass
+            existing_ctf.delete()
 
         settings = get_settings(interaction.guild)
 
@@ -180,7 +219,8 @@ class CtfCommands(app_commands.Group):
         )
         ctf_db.save()
 
-        await interaction.edit_original_response(content=f"Created ctf {new_channel.mention}")
+        await interaction.delete_original_response()
+        await interaction.channel.send(f"Created CTF {new_channel.mention}")
 
         if not private and not settings.use_team_role_as_acl:
             for member in get_team_role(interaction.guild).members:
@@ -193,6 +233,7 @@ class CtfCommands(app_commands.Group):
         app_commands.Choice(name="start", value="start"),
         app_commands.Choice(name="end", value="end"),
         app_commands.Choice(name="url", value="url"),
+        app_commands.Choice(name="discord", value="discord"),
         app_commands.Choice(name="creds", value="creds"),
         app_commands.Choice(name="ctftime", value="ctftime")
     ])
@@ -239,16 +280,41 @@ class CtfCommands(app_commands.Group):
                     )
                     await submit_interaction.response.send_message("Updated info", ephemeral=True)
 
+                    # Send and pin message just with password for easy copy paste
+                    regex_password = re.search(r"Password: `(.+)`", self.edit.value)
+                    if not regex_password:
+                        return
+
+                    password = regex_password.group(1)
+                    if ctf_db.password_id is None:
+                        msg = await interaction.channel.send(password)
+                        await msg.pin()
+                        ctf_db.password_id = msg.id
+                        ctf_db.save()
+                    else:
+                        await interaction.channel.get_partial_message(ctf_db.password_id).edit(
+                            content=password
+                        )
+
             await interaction.response.send_modal(CredsModal())
             return
         elif field == "url":
             if not re.search(r"^https?://", value):
-                raise app_commands.AppCommandError("Invalid url")
+                raise app_commands.AppCommandError("Invalid URL")
             info["url"] = value
+        elif field == "discord":
+            regex_discord = re.search(
+                r"^(?:https?://)?discord\.\w{2,3}/(?:invite/)?(\w+)/?$",
+                value
+            )
+            if not regex_discord:
+                raise app_commands.AppCommandError("Invalid Discord URL")
+
+            info["discord"] = f"https://discord.gg/{regex_discord.group(1)}"
         elif field == "ctftime":
             regex_ctftime = re.search(r"^(?:https?://ctftime.org/event/)?(\d+)/?$", value)
             if not regex_ctftime:
-                raise app_commands.AppCommandError("Invalid ctftime link")
+                raise app_commands.AppCommandError("Invalid CTFtime link")
 
             info["ctftime_id"] = int(regex_ctftime.group(1))
             ctf_info = await Ctftime.get_ctf_info(info["ctftime_id"])
@@ -388,16 +454,28 @@ class CtfCommands(app_commands.Group):
     @app_commands.command(description="Delete a CTF and its channels")
     @app_commands.guild_only
     @app_commands.check(is_team_admin)
-    async def delete(self, interaction: discord.Interaction, security: str | None):
-        ctf_db = await get_ctf_db(interaction, archived=None, allow_chall=False)
+    async def delete(
+        self,
+        interaction: discord.Interaction,
+        security: str | None,
+        force: bool | None = False
+    ):
         assert isinstance(interaction.channel, discord.TextChannel)
 
         if security is None:
             raise app_commands.AppCommandError(
                 f"Please supply the security parameter \"{interaction.channel.name}\""
             )
-        if security != interaction.channel.name:
-            raise app_commands.AppCommandError("Wrong security parameter")
+
+        if force:
+            ctf_db = Ctf.objects(name=security).first()
+            if ctf_db is None:
+                raise app_commands.AppCommandError(f"No CTF in DB with name {security}")
+        else:
+            ctf_db = await get_ctf_db(interaction, archived=None, allow_chall=False)
+            if security != interaction.channel.name:
+                raise app_commands.AppCommandError("Wrong security parameter")
+
         await interaction.response.defer()
 
         for chall in Challenge.objects(ctf=ctf_db):
@@ -410,9 +488,20 @@ class CtfCommands(app_commands.Group):
             await interaction.guild.get_role(ctf_db.role_id).delete(reason="Deleted CTF channels")
         except AttributeError:
             pass
-        await delete_channel(interaction.channel)
+
+        ctf_channel = interaction.guild.get_channel(ctf_db.channel_id)
+        try:
+            await delete_channel(ctf_channel)
+        except AttributeError:
+            pass
+
         Challenge.objects(ctf=ctf_db).delete()
         ctf_db.delete()
+
+        if interaction.channel != ctf_channel:
+            await interaction.edit_original_response(
+                content="CTF deleted successfully"
+            )
 
 
 @app_commands.command(description="Invite a user to the CTF")
