@@ -354,17 +354,13 @@ class WorkingCommands(app_commands.Group):
                                                 ephemeral=True, allowed_mentions=discord.AllowedMentions.none())
 
     @app_commands.command(description="Get table of all work on challenges")
-    @app_commands.choices(filter=[
-        app_commands.Choice(name='all', value=0),
-        app_commands.Choice(name='current', value=1)
-    ])
     @app_commands.guild_only
-    async def table(self, interaction: discord.Interaction, filter: int = 1):
+    async def table(self, interaction: discord.Interaction, include_solved: bool = False):
         ctf_db = await get_ctf_db(interaction, archived=None)
         assert isinstance(interaction.channel, discord.TextChannel)
 
         await interaction.response.defer(ephemeral=True)
-        if filter == 0:
+        if include_solved:
             challs = Challenge.objects(ctf=ctf_db)
         else:
             challs = Challenge.objects(ctf=ctf_db, solved=False)

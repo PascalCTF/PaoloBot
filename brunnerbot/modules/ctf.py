@@ -396,7 +396,7 @@ async def remove(interaction: discord.Interaction, user: discord.Member):
         await interaction.response.send_message("Cannot remove user from CTF", ephemeral=True)
 
 
-def add_commands(tree: app_commands.CommandTree, guild: Optional[discord.Object]):
+def add_commands(tree: app_commands.CommandTree, guild: discord.Object | None):
     tree.add_command(CtfCommands(name="ctf"), guild=guild)
     tree.add_command(invite, guild=guild)
     tree.add_command(leave, guild=guild)
