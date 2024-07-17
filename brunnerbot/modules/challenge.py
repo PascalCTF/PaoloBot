@@ -208,12 +208,15 @@ async def done(interaction: discord.Interaction, contributors: Optional[str]):
 
     # Special emojis for certain users, otherwise default
     emojis = {
-        286173785336446978: (":fire:", "firepog"),  # firehawk
-        112158630161158144: (":punch:", "noshell"),  # N1z0ku
-        145301884662448128: (":flag_no:", "chadtor"),  # Victor4X
-        634877910511255575: (":lemon: :last_quarter_moon_with_face:", "lightsaberpepe"),  # Anakin
+        286173785336446978: ("🔥", "firepog"),  # firehawk
+        112158630161158144: ("👊🏼", "noshell"),  # N1z0ku
+        145301884662448128: ("🇳🇴", "chadtor"),  # Victor4X
+        634877910511255575: ("🍋 🌜", "lightsaberpepe"),  # Anakin
+        174499485014163466: ("🎅🏼", "sirene"),  # Nissen
+        177497812303347713: ("☣️", "toxic"),  # Toxicd
+        556857403883257857: ("🇩🇰", "danish"),  # D4n1sh
     }
-    msg_emoji = ":tada:"
+    msg_emoji = "🎉"
     reaction_emoji = "peepoBrunner"
 
     if len(users) == 1 and users[0] in emojis:
