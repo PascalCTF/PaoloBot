@@ -1,5 +1,6 @@
-import datetime
 import logging
+
+from datetime import datetime
 
 import aiohttp
 import discord
@@ -31,7 +32,7 @@ class ModalNoteView(ui.View):
                 new_message = await interaction.message.fetch()
                 result, success = dmp.patch_apply(patches, new_message.embeds[0].description)
 
-                await interaction.message.edit(embed=discord.Embed(title="note", description=result, color=MODAL_NOTE_COLOR, timestamp=datetime.datetime.now()))
+                await interaction.message.edit(embed=discord.Embed(title="note", description=result, color=MODAL_NOTE_COLOR, timestamp=datetime.now()))
                 await submit_interaction.response.defer()
 
         await interaction.response.send_modal(EditNoteModal())
@@ -74,7 +75,7 @@ class HedgeDocNoteView(ui.View):
                     return
                 new_description = (await response.text())[:4096]
 
-                await interaction.message.edit(embed=discord.Embed(title="note", description=new_description, color=HEDGEDOC_NOTE_COLOR, timestamp=datetime.datetime.now()))
+                await interaction.message.edit(embed=discord.Embed(title="note", description=new_description, color=HEDGEDOC_NOTE_COLOR, timestamp=datetime.now()))
 
     @ui.button(label="Pin/Unpin", emoji="📌", style=discord.ButtonStyle.secondary, custom_id='hedgedoc_note:toggle_pin')
     async def toggle_pin(self, interaction: discord.Interaction, _button: ui.Button):
@@ -108,7 +109,7 @@ async def note(interaction: discord.Interaction, type: str = "doc"):
             raise app_commands.AppCommandError("Not a CTF channel!")
 
     if type == "modal":
-        await interaction.response.send_message(embed=discord.Embed(title="note", description="note goes here", color=MODAL_NOTE_COLOR, timestamp=datetime.datetime.now()),
+        await interaction.response.send_message(embed=discord.Embed(title="note", description="note goes here", color=MODAL_NOTE_COLOR, timestamp=datetime.now()),
                                             view=ModalNoteView())
     elif type == "doc":
         await interaction.response.defer()
@@ -123,7 +124,7 @@ async def note(interaction: discord.Interaction, type: str = "doc"):
                 if response.status != 200:
                     await interaction.edit_original_response(content="Could not create a HedgeDoc note")
                     return
-                await interaction.edit_original_response(embed=discord.Embed(title="note", description="", color=HEDGEDOC_NOTE_COLOR, timestamp=datetime.datetime.now()),
+                await interaction.edit_original_response(embed=discord.Embed(title="note", description="", color=HEDGEDOC_NOTE_COLOR, timestamp=datetime.now()),
                                                     view=HedgeDocNoteView(str(response.url) + "?edit"))
 
 

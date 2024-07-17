@@ -1,10 +1,12 @@
+from datetime import datetime
 from urllib.parse import quote_plus
 
-import discord
 import aiohttp
-from discord import app_commands
+import discord
+
 from bs4 import BeautifulSoup
-import datetime
+from dateutil import parser
+from discord import app_commands
 from tabulate import tabulate
 
 from brunnerbot.utils import get_settings
@@ -22,8 +24,8 @@ class Ctftime(app_commands.Group):
                 return {
                     'title': data['title'],
                     'url': data['url'],
-                    'start': int(datetime.datetime.strptime(data["start"], "%Y-%m-%dT%H:%M:%S%z").timestamp()),
-                    'end': int(datetime.datetime.strptime(data["finish"], "%Y-%m-%dT%H:%M:%S%z").timestamp()),
+                    'start': int(parser.parse(data["start"]).timestamp()),
+                    'end': int(parser.parse(data["finish"]).timestamp()),
                 }
 
     @staticmethod
@@ -49,7 +51,7 @@ class Ctftime(app_commands.Group):
 
     @staticmethod
     def check_year(year):
-        current_year = datetime.datetime.now().year
+        current_year = datetime.now().year
         if year is None:
             return current_year
         if 0 <= year < 100:
@@ -136,7 +138,7 @@ class Ctftime(app_commands.Group):
         else:
             out = f"**Showing top teams**"
 
-        if year != datetime.datetime.now().year:
+        if year != datetime.now().year:
             out += f' **({year})**'
 
         out += '\n```\n'
@@ -186,7 +188,7 @@ class Ctftime(app_commands.Group):
             return
 
         try:
-            team_name, tbl, old_rating = await self.get_team_top10(url, datetime.datetime.now().year)
+            team_name, tbl, old_rating = await self.get_team_top10(url, datetime.now().year)
         except Exception as e:
             print(e)
             return

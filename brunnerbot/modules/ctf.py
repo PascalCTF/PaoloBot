@@ -1,10 +1,11 @@
-import datetime
 import json
 import re
 
 from pathlib import Path
 
 import discord
+
+from dateutil import parser
 from discord import app_commands
 from discord import ui
 
@@ -174,12 +175,12 @@ class CtfCommands(app_commands.Group):
                 t = int(value)
             else:
                 try:
-                    t = int(datetime.datetime.strptime(value, "%Y-%m-%d %H:%M %z").timestamp())
-                except ValueError:
-                    try:
-                        t = int(datetime.datetime.strptime(value, "%Y-%m-%d %H:%M").timestamp())
-                    except ValueError:
-                        raise app_commands.AppCommandError('Invalid time. Either Unix Timestamp or "%Y-%m-%d %H:%M %z" (Timezone is optional but can for example be "+0200")')
+                    t = int(parser.parse(value).timestamp())
+                except parser.ParserError as exc:
+                    raise app_commands.AppCommandError(
+                        "Invalid time, please use any standard time format"
+                    ) from exc
+
             info[field] = t
         elif field == "creds":
             c = value.split(":", 1)
