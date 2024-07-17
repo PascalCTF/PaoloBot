@@ -3,7 +3,6 @@ from urllib.parse import quote_plus
 import discord
 import aiohttp
 from discord import app_commands
-from typing import Optional
 from bs4 import BeautifulSoup
 import datetime
 from tabulate import tabulate
@@ -111,7 +110,7 @@ class Ctftime(app_commands.Group):
 
 
     @app_commands.command(description="Display top teams for a specified year and/or country")
-    async def top(self, interaction: discord.Interaction, country: Optional[str], year: Optional[int]):
+    async def top(self, interaction: discord.Interaction, country: str | None, year: int | None):
         year = self.check_year(year)
         if year is None:
             raise app_commands.AppCommandError("Invalid year")
@@ -150,7 +149,7 @@ class Ctftime(app_commands.Group):
         await interaction.response.send_message(out)
 
     @app_commands.command(description="Show top 10 events for a team")
-    async def team(self, interaction: discord.Interaction, team: Optional[str], year: Optional[int]):
+    async def team(self, interaction: discord.Interaction, team: str | None, year: int | None):
         year = self.check_year(year)
         if year is None:
             raise app_commands.AppCommandError("Invalid year")
@@ -177,7 +176,7 @@ class Ctftime(app_commands.Group):
         await interaction.edit_original_response(content=out)
 
     @app_commands.command(description="Calculate new CTFTime score from ctf")
-    async def calc(self, interaction: discord.Interaction, weight: float, best_points: float, team_points: float, team_place: int, team: Optional[str]):
+    async def calc(self, interaction: discord.Interaction, weight: float, best_points: float, team_points: float, team_place: int, team: str | None):
         new_score = (team_points/best_points + 1/team_place) * weight
 
         await interaction.response.send_message(f"Rating points: {new_score:.03f}")
@@ -199,5 +198,5 @@ class Ctftime(app_commands.Group):
         await interaction.edit_original_response(content=f'Rating points: {new_score:.03f}\nNew Rating for {team_name}: {new_rating:.03f} (+{score_diff:.03f})')
 
 
-def add_commands(tree: app_commands.CommandTree, guild: Optional[discord.Object]):
+def add_commands(tree: app_commands.CommandTree, guild: discord.Object | None):
     tree.add_command(Ctftime(), guild=guild)

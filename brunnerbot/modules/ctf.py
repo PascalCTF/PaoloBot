@@ -3,7 +3,6 @@ import json
 import re
 
 from pathlib import Path
-from typing import List, Optional, Union
 
 import discord
 from discord import app_commands
@@ -17,7 +16,7 @@ from brunnerbot.models.challenge import Challenge
 from brunnerbot.models.ctf import Ctf
 
 
-async def get_ctf_db(interaction: discord.Interaction, archived: Optional[bool] = False, allow_chall: bool = True) -> Ctf:
+async def get_ctf_db(interaction: discord.Interaction, archived: bool | None = False, allow_chall: bool = True) -> Ctf:
     ctf_db: Ctf = Ctf.objects(channel_id=interaction.channel_id).first()
     if ctf_db is None:
         chall_db: Challenge = Challenge.objects(channel_id=interaction.channel_id).first()
@@ -31,7 +30,7 @@ async def get_ctf_db(interaction: discord.Interaction, archived: Optional[bool] 
     return ctf_db
 
 
-def user_to_dict(user: Union[discord.Member, discord.User]):
+def user_to_dict(user: discord.Member | discord.User):
     """
     Based on https://github.com/ekofiskctf/fiskebot/blob/eb774b7/bot/ctf_model.py#L156
     """
@@ -44,7 +43,7 @@ def user_to_dict(user: Union[discord.Member, discord.User]):
     }
 
 
-async def export_channels(channels: List[discord.TextChannel]):
+async def export_channels(channels: list[discord.TextChannel]):
     """
     Based on https://github.com/ekofiskctf/fiskebot/blob/eb774b7/bot/ctf_model.py#L778
     """
@@ -108,7 +107,7 @@ class CtfCommands(app_commands.Group):
     @app_commands.command(description="Create a new CTF event")
     @app_commands.guild_only
     @app_commands.check(is_team_admin)
-    async def create(self, interaction: discord.Interaction, name: str, ctftime: Optional[str], private: bool = False):
+    async def create(self, interaction: discord.Interaction, name: str, ctftime: str | None, private: bool = False):
         if len(interaction.guild.channels) >= MAX_CHANNELS - 3:
             raise app_commands.AppCommandError("There are too many channels on this discord server")
         name = sanitize_channel_name(name)
@@ -332,7 +331,7 @@ class CtfCommands(app_commands.Group):
     @app_commands.command(description="Delete a CTF and its channels")
     @app_commands.guild_only
     @app_commands.check(is_team_admin)
-    async def delete(self, interaction: discord.Interaction, security: Optional[str]):
+    async def delete(self, interaction: discord.Interaction, security: str | None):
         ctf_db = await get_ctf_db(interaction, archived=None, allow_chall=False)
         assert isinstance(interaction.channel, discord.TextChannel)
 

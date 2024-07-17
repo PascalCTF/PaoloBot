@@ -1,5 +1,3 @@
-from typing import Optional
-
 import discord
 from discord import app_commands
 from mongoengine import ValidationError
@@ -108,5 +106,5 @@ class BotCommands(app_commands.Group):
         await interaction.response.send_message(response, ephemeral=True)
 
 
-def add_commands(tree: app_commands.CommandTree, guild: Optional[discord.Object]):
+def add_commands(tree: app_commands.CommandTree, guild: discord.Object | None):
     tree.add_command(BotCommands(name="bot"), guild=guild)

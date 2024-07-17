@@ -1,6 +1,5 @@
 import datetime
 import logging
-from typing import Optional
 
 import aiohttp
 import discord
@@ -128,5 +127,5 @@ async def note(interaction: discord.Interaction, type: str = "doc"):
                                                     view=HedgeDocNoteView(str(response.url) + "?edit"))
 
 
-def add_commands(tree: app_commands.CommandTree, guild: Optional[discord.Object]):
+def add_commands(tree: app_commands.CommandTree, guild: discord.Object | None):
     tree.add_command(note, guild=guild)

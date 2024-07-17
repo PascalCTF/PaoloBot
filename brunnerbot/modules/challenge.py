@@ -1,6 +1,5 @@
 import re
 import tempfile
-from typing import Optional, Tuple, List, Dict
 
 from pathlib import Path
 
@@ -19,7 +18,7 @@ from brunnerbot.models.challenge import Challenge
 from brunnerbot.models.ctf import Ctf
 
 
-async def check_challenge(interaction: discord.Interaction) -> Tuple[Optional[Challenge], Optional[Ctf]]:
+async def check_challenge(interaction: discord.Interaction) -> tuple[Challenge | None, Ctf | None]:
     chall_db: Challenge = Challenge.objects(channel_id=interaction.channel_id).first()
     if chall_db is None:
         raise app_commands.AppCommandError("Not a challenge!")
@@ -29,13 +28,13 @@ async def check_challenge(interaction: discord.Interaction) -> Tuple[Optional[Ch
     return chall_db, ctf_db
 
 
-async def category_autocomplete(interaction: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+async def category_autocomplete(interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
     current = sanitize_channel_name(current)
     query = CtfCategory.objects(name=re.compile("^" + re.escape(current)), guild_id=interaction.guild_id).order_by('-count')[:25]
     return [app_commands.Choice(name=c["name"], value=c["name"]) for c in query]
 
 
-async def category_autocomplete_nullable(interaction: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+async def category_autocomplete_nullable(interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
     out = await category_autocomplete(interaction, current)
     if len(out) < 25 and "none".startswith(current):
         out.append(app_commands.Choice(name='None', value=''))
@@ -55,7 +54,7 @@ def get_work_embeds(chall_db: Challenge):
     return embeds
 
 
-async def update_work_message(chall_db: Challenge, channel: Optional[discord.PartialMessageable]):
+async def update_work_message(chall_db: Challenge, channel: discord.PartialMessageable | None):
     if channel:
         message = channel.get_partial_message(chall_db.work_message)
         try:
@@ -188,7 +187,7 @@ async def add(interaction: discord.Interaction, category: str, name: str):
 
 @app_commands.command(description="Marks a challenge as done")
 @app_commands.guild_only
-async def done(interaction: discord.Interaction, contributors: Optional[str]):
+async def done(interaction: discord.Interaction, contributors: str | None):
     chall_db, ctf_db = await check_challenge(interaction)
     assert isinstance(interaction.channel, discord.TextChannel)
 
@@ -298,7 +297,7 @@ CELL_HEIGHT = 35 / 77
 CELL_WIDTH = 100 / 77
 MAX_TABLE_USERS = 20
 
-def export_table(solves: Dict[discord.Member, List[int]], challs: List[str], filename: str):
+def export_table(solves: dict[discord.Member, list[int]], challs: list[str], filename: str):
     has_names = len(solves) <= MAX_TABLE_USERS
     height = len(challs)
     width = len(solves)
@@ -341,7 +340,7 @@ class WorkingCommands(app_commands.Group):
     @app_commands.command(description="Set working status on the challenge")
     @app_commands.choices(value=[app_commands.Choice(name=w.name, value=w.value) for w in WORK_VALUES])
     @app_commands.guild_only
-    async def set(self, interaction: discord.Interaction, value: int, user: Optional[discord.Member]):
+    async def set(self, interaction: discord.Interaction, value: int, user: discord.Member | None):
         chall_db, ctf_db = await check_challenge(interaction)
         await set_work(interaction.guild, chall_db, user or interaction.user, value)
         await interaction.response.send_message(f"Updated working status to {WORK_VALUES[value]}", ephemeral=True)
@@ -398,7 +397,7 @@ class WorkingCommands(app_commands.Group):
             await interaction.edit_original_response(attachments=[discord.File(filename)])
 
 
-def add_commands(tree: app_commands.CommandTree, guild: Optional[discord.Object]):
+def add_commands(tree: app_commands.CommandTree, guild: discord.Object | None):
     tree.add_command(add, guild=guild)
     tree.add_command(done, guild=guild)
     tree.add_command(undone, guild=guild)
