@@ -153,7 +153,7 @@ class HedgeDocNoteView(ui.View):
     app_commands.Choice(name="modal", value="modal"),
     app_commands.Choice(name="doc", value="doc")
 ])
-async def note(interaction: discord.Interaction, note_type: str = "doc"):
+async def note(interaction: discord.Interaction, note_type: str = "modal"):
     ctf_db: Ctf = Ctf.objects(channel_id=interaction.channel_id).first()
     if ctf_db is None:
         chall_db: Challenge = Challenge.objects(channel_id=interaction.channel_id).first()
@@ -170,31 +170,32 @@ async def note(interaction: discord.Interaction, note_type: str = "doc"):
             ),
             view=ModalNoteView()
         )
-    elif note_type == "doc":
+        return
+
+    if note_type == "doc":
         await interaction.response.defer()
-        hedgedoc_url = "https://demo.hedgedoc.org"
+        doc_url = "https://demo.hedgedoc.org"
         if interaction.guild is not None:
             settings = get_settings(interaction.guild)
             if settings.hedgedoc_url:
-                hedgedoc_url = settings.hedgedoc_url
+                doc_url = settings.hedgedoc_url
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(hedgedoc_url + "/new") as response:
-                if response.status != 200:
-                    await interaction.edit_original_response(
-                        content="Could not create a HedgeDoc note"
-                    )
-                    return
-
+        async with aiohttp.ClientSession() as session, session.get(f"{doc_url}/new") as response:
+            if response.status != 200:
                 await interaction.edit_original_response(
-                    embed=discord.Embed(
-                        title="note",
-                        description="",
-                        color=HEDGEDOC_NOTE_COLOR,
-                        timestamp=datetime.now()
-                    ),
-                    view=HedgeDocNoteView(str(response.url) + "?edit")
+                    content="Could not create a HedgeDoc note"
                 )
+                return
+
+            await interaction.edit_original_response(
+                embed=discord.Embed(
+                    title="note",
+                    description="",
+                    color=HEDGEDOC_NOTE_COLOR,
+                    timestamp=datetime.now()
+                ),
+                view=HedgeDocNoteView(f"{response.url}?edit")
+            )
 
 
 def add_commands(tree: app_commands.CommandTree, guild: discord.Object | None):

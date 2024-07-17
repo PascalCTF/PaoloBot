@@ -10,3 +10,4 @@ disable=
     too-many-locals,  # Code smells, wontfix
     too-many-branches,
     too-many-arguments,
+    too-many-statements

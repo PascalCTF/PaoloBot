@@ -21,12 +21,14 @@ BrunnerBot adds a number of slash commands for easy and effective CTF management
 * `/add <category> <name>`: Create new challenge (description is entered in popup modal)
   * Creates a new channel under `INCOMPLETE CHALLENGES`
   * `category` is a selection list, create new with `/category create <category>`, delete with `/category delete <category>`
-* `/note [type]`: Create challenge note
-  * Lets all team members edit the same persistent note
-  * Default `type` is `doc`, creates an external HedgeDoc markdown note
-  * Use `type:modal` for an embedded note in the channel
-    * Notes can be edited, pinned, and moved down to stay the most recent
+* `/note [note_type]`: Create challenge note
+  * Lets all team members edit the same embedded note
+  * Notes can be pinned/unpinned and moved to the bottom of the chat
+  * Default `note_type` is `modal`, allows edits within Discord through a modal
     * Simultaneous changes are merged with diff-match-patch
+  * Use `note_type:doc` for an external HedgeDoc markdown note
+    * **NOTE:** HedgeDoc has [disabled anonymous demo notes](https://community.hedgedoc.org/t/no-more-anonymous-usage-of-demo-instance/1634), this now requires a custom instance
+    * Custom HedgeDoc URL can be set with `/bot set key:hedgedoc_url value:<URL>`
 * `/working set <status>`: Set working status (`/w` short for `/working set Working`)
   * Or simply click the `Set Working` button in the challenge channel
   * Get an overview with `/working table`
@@ -132,4 +134,5 @@ Settings:
   * The setting has no effect on private CTFs, a new role is *always* created for these
     * But all players must be manually invited, team members do not get the new role automatically
 * `hedgedoc_url`: URL for HedgeDoc notes, defaults to [https://demo.hedgedoc.org/](https://demo.hedgedoc.org/)
+  * **NOTE:** The default demo URL *no longer works*, HedgeDoc has [disabled anonymous demo notes](https://community.hedgedoc.org/t/no-more-anonymous-usage-of-demo-instance/1634)
 * `ctftime_team`: CTFtime team name, used by default by `/ctftime` commands if set
