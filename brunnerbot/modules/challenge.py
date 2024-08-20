@@ -271,6 +271,10 @@ async def done(interaction: discord.Interaction, contributors: str | None):
         174499485014163466: ("🎅🏼", "sirene"),  # Nissen
         177497812303347713: ("☣️", "toxic"),  # Toxicd
         556857403883257857: ("🇩🇰", "danish"),  # D4n1sh
+        247728628413104128: ("🇩🇰", "rooWizard"),  # DaWiz
+        478178456329388032: ("😎", "based"),  # Migsej
+        209692688415457282: ("🌐", "river"),  # The Mikkel
+        158216455035420672: ("🦆", "rubberduck"),  # Quack
     }
     msg_emoji = "🎉"
     reaction_emoji = "peepoBrunner"
