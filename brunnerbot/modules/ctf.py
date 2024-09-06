@@ -304,7 +304,7 @@ class CtfCommands(app_commands.Group):
             info["url"] = value
         elif field == "discord":
             regex_discord = re.search(
-                r"^(?:https?://)?discord\.\w{2,3}/(?:invite/)?(\w+)/?$",
+                r"^(?:https?://)?discord\.\w{2,3}/(?:invite/)?([a-zA-Z0-9-]+)/?$",
                 value
             )
             if not regex_discord:
