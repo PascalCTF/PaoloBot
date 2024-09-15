@@ -266,8 +266,8 @@ async def done(interaction: discord.Interaction, contributors: str | None):
     emojis = {
         286173785336446978: ("🔥", "firepog"),  # firehawk
         112158630161158144: ("👊🏼", "noshell"),  # N1z0ku
-        145301884662448128: ("🇳🇴", "chadtor"),  # Victor4X
-        634877910511255575: ("🍋 🌜", "lightsaberpepe"),  # Anakin
+        145301884662448128: (("🇳🇴", "🇩🇰"), "chadtor"),  # Victor4X
+        634877910511255575: (("🍋","🌜"), "lightsaberpepe"),  # Anakin
         174499485014163466: ("🎅🏼", "sirene"),  # Nissen
         177497812303347713: ("☣️", "toxic"),  # Toxicd
         556857403883257857: ("🇩🇰", "danish"),  # D4n1sh
@@ -281,9 +281,13 @@ async def done(interaction: discord.Interaction, contributors: str | None):
 
     if len(users) == 1 and users[0] in emojis:
         msg_emoji, reaction_emoji = emojis[users[0]]
+        if type(msg_emoji) is tuple and len(msg_emoji) == 2:
+            left_emoji, right_emoji = msg_emoji
+        else:
+            left_emoji, right_emoji = msg_emoji, msg_emoji
 
     solvers = " ".join(f"<@!{user}>" for user in users)
-    msg = f"{msg_emoji}  {interaction.channel.mention} was solved by {solvers}!  {msg_emoji}"
+    msg = f"{left_emoji}  {interaction.channel.mention} was solved by {solvers}!  {right_emoji}"
     sent_msg = await interaction.guild.get_channel(ctf_db.channel_id).send(msg)
 
     # Pre-react to solver message
