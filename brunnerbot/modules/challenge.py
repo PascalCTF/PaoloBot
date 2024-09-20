@@ -276,15 +276,14 @@ async def done(interaction: discord.Interaction, contributors: str | None):
         209692688415457282: ("🌐", "river"),  # The Mikkel
         158216455035420672: ("🦆", "rubberduck"),  # Quack
     }
-    msg_emoji = "🎉"
+    msg_emojis = ("🎉", "🎉")
     reaction_emoji = "peepoBrunner"
 
     if len(users) == 1 and users[0] in emojis:
-        msg_emoji, reaction_emoji = emojis[users[0]]
-        if type(msg_emoji) is tuple and len(msg_emoji) == 2:
-            left_emoji, right_emoji = msg_emoji
-        else:
-            left_emoji, right_emoji = msg_emoji, msg_emoji
+        msg_emojis, reaction_emoji = emojis[users[0]]
+        if type(msg_emojis) is str:
+            msg_emojis = (msg_emojis, msg_emojis)
+    left_emoji, right_emoji = msg_emojis
 
     solvers = " ".join(f"<@!{user}>" for user in users)
     msg = f"{left_emoji}  {interaction.channel.mention} was solved by {solvers}!  {right_emoji}"
