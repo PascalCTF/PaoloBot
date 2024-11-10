@@ -202,7 +202,11 @@ async def add(interaction: discord.Interaction, category: str, name: str):
                 interaction.channel.overwrites,
                 incomplete_category
             )
-            await new_channel.send(f"# {self.name_field.value}\n\n{self.description_field.value}")
+
+            chall_title = discord.utils.escape_mentions(self.name_field.value)
+            chall_description = discord.utils.escape_mentions(self.description_field.value)
+
+            await new_channel.send(f"# {chall_title}\n\n{chall_description}")
 
             work_message_id = None
             if settings.send_work_message:
