@@ -40,6 +40,9 @@ BrunnerBot adds a number of slash commands for easy and effective CTF management
 * `/ctf export`: Export a CTF
   * Exports all CTF channels to JSON format, files are *not* currently exported
   * Both running and archived CTFs can be exported
+* `/ctf invite <ctf> [emoji]`: Send an CTF invitation players can use to join unaided
+  * Sends a message to the `invite_channel` with a reaction role
+  * Users can react to the message to add/remove the role for the given CTF
 * `/ctf delete [security]`: Delete a CTF
   * Asks for CTF name as a sanity check if not input as `security`
 
@@ -118,6 +121,7 @@ Settings:
 * `archive_category`: Discord category for archived challenges, default `ARCHIVE`
 * `ctf_archive_category`: Discord category for archived CTF main channels, default `ARCHIVED CTFS`
 * `export_channel`: Channel ID for JSON export uploads
+* `invite_channel`: Channel ID for reaction role invitation messages
 * `enforce_categories (default True)`: Players must choose a category from the existing list
   * New categories can be created by team admins
   * If false, players get the selection options but can type any category they want
