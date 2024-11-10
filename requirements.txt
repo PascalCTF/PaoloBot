@@ -2,6 +2,6 @@ beautifulsoup4~=4.12.3
 diff-match-patch
 discord.py~=2.4.0
 matplotlib~=3.9.0
-mongoengine~=0.28.2
+mongoengine~=0.29.1
 python-dateutil
 tabulate~=0.9.0
