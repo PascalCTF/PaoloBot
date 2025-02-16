@@ -4,11 +4,13 @@ import sys
 
 import discord
 import pymongo.errors
-from discord import app_commands
+
+from discord import RawReactionActionEvent, app_commands
 
 from brunnerbot.modules import ctf, ctftime, challenge, notes, bot
 from brunnerbot.config import config
 from brunnerbot.database import db
+from brunnerbot.models.invite import Invite
 from brunnerbot.utils import setup_settings
 
 logging.basicConfig(level=logging.INFO)
@@ -59,6 +61,56 @@ async def on_guild_join(guild: discord.Guild):
         await setup_settings(guild)
         if config.guild_id:
             await tree.sync(guild=GUILD_OBJ)
+
+
+@client.event
+async def on_raw_reaction_add(reaction: RawReactionActionEvent):
+    # Handle CTF joins through invite message reactions
+    if client.user.id == reaction.user_id:
+        return
+
+    if config.guild_id is not None and config.guild_id != reaction.guild_id:
+        return
+
+    invite = Invite.objects(message_id=reaction.message_id).first()
+    if invite is None or invite.emoji != str(reaction.emoji):
+        return
+
+    guild = client.get_guild(reaction.guild_id)
+    member = guild.get_member(reaction.user_id)
+    if member is None:
+        return
+
+    role = guild.get_role(invite.ctf.role_id)
+    if role is None:
+        return
+
+    await member.add_roles(role, reason=f"User {member.name} joined CTF {invite.ctf.name}")
+
+
+@client.event
+async def on_raw_reaction_remove(reaction: RawReactionActionEvent):
+    # Handle CTF leaves through invite message reactions
+    if client.user.id == reaction.user_id:
+        return
+
+    if config.guild_id is not None and config.guild_id != reaction.guild_id:
+        return
+
+    invite = Invite.objects(message_id=reaction.message_id).first()
+    if invite is None or invite.emoji != str(reaction.emoji):
+        return
+
+    guild = client.get_guild(reaction.guild_id)
+    member = guild.get_member(reaction.user_id)
+    if member is None:
+        return
+
+    role = guild.get_role(invite.ctf.role_id)
+    if role is None:
+        return
+
+    await member.remove_roles(role, reason=f"User {member.name} left CTF {invite.ctf.name}")
 
 
 @tree.error

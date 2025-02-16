@@ -33,6 +33,7 @@ SETTINGS_TYPES = {
     "archive_category": discord.CategoryChannel,
     "ctf_archive_category": discord.CategoryChannel,
     "export_channel": discord.TextChannel,
+    "invite_channel": discord.TextChannel,
     "enforce_categories": bool,
     "send_work_message": bool,
     "use_team_role_as_acl": bool,

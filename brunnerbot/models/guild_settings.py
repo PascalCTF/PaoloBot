@@ -11,6 +11,7 @@ class GuildSettings(Document):
     archive_category = LongField(required=True)
     ctf_archive_category = LongField(required=True)
     export_channel = LongField(required=True)
+    invite_channel = LongField(required=True)
     enforce_categories = BooleanField(default=True)
     send_work_message = BooleanField(default=True)
     use_team_role_as_acl = BooleanField(default=False)

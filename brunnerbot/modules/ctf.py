@@ -20,6 +20,7 @@ from brunnerbot.utils import (
     get_complete_category,
     get_incomplete_category,
     get_export_channel,
+    get_invite_channel,
     get_team_role,
     get_settings,
     sanitize_channel_name,
@@ -30,6 +31,7 @@ from brunnerbot.config import config
 
 from brunnerbot.models.challenge import Challenge
 from brunnerbot.models.ctf import Ctf
+from brunnerbot.models.invite import Invite
 
 
 async def get_ctf_db(
@@ -131,6 +133,17 @@ def create_info_message(info):
         msg += f"\n\n### CREDENTIALS\n\n{discord.utils.escape_mentions(info['creds'])}"
 
     return msg
+
+
+async def ctf_autocomplete(
+    interaction: discord.Interaction,
+    current: str
+) -> list[app_commands.Choice[str]]:
+    query = Ctf.objects(
+        name=re.compile("^" + re.escape(current)),
+        archived=False
+    ).order_by("name")[:25]
+    return [app_commands.Choice(name=c["name"], value=c["name"]) for c in query]
 
 
 class CtfCommands(app_commands.Group):
@@ -496,12 +509,50 @@ class CtfCommands(app_commands.Group):
             pass
 
         Challenge.objects(ctf=ctf_db).delete()
+
+        # Delete any invites for the CTF
+        invite_channel = get_invite_channel(interaction.guild)
+        for invite in Invite.objects(ctf=ctf_db):
+            await invite_channel.get_partial_message(invite.message_id).delete()
+
+        Invite.objects(ctf=ctf_db).delete()
+
         ctf_db.delete()
 
         if interaction.channel != ctf_channel:
             await interaction.edit_original_response(
                 content="CTF deleted successfully"
             )
+
+    @app_commands.command(description="Generate an invitation for a CTF")
+    @app_commands.autocomplete(ctf=ctf_autocomplete)
+    @app_commands.guild_only
+    @app_commands.check(is_team_admin)
+    async def invite(self, interaction: discord.Interaction, ctf: str, emoji: str="🚩"):
+        assert isinstance(interaction.channel, discord.TextChannel)
+
+        reaction = emoji
+        emoji_parts = emoji.split(":")
+        if len(emoji_parts) > 1:
+            reaction = discord.utils.get(interaction.guild.emojis, name=emoji_parts[1])
+            if reaction is None:
+                await interaction.response.send_message(f"Emoji {emoji} is not part of this server", ephemeral=True)
+                return
+
+        invite_channel = get_invite_channel(interaction.guild)
+        ctf_object = Ctf.objects(name=ctf).first()
+        invite_msg = await invite_channel.send(f"## CTF Invite: {ctf}\nReact below with {emoji} to get access to <#{ctf_object.channel_id}>")
+
+        # Save invite in DB to lookup CTF role upon reactions
+        invite = Invite(
+            message_id=invite_msg.id,
+            emoji=emoji,
+            ctf=ctf_object
+        )
+        invite.save()
+
+        await invite_msg.add_reaction(reaction)
+        await interaction.response.send_message(f"Invite generated for {ctf}")
 
 
 @app_commands.command(description="Invite a user to the CTF")

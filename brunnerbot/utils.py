@@ -181,7 +181,8 @@ async def setup_settings(guild: discord.Guild):
         "complete_category": "COMPLETE CHALLENGES",
         "archive_category": "ARCHIVE",
         "ctf_archive_category": "ARCHIVED CTFS",
-        "export_channel": "export"
+        "export_channel": "export",
+        "invite_channel": "ctf-invites"
     }
     for key, name in discord_values.items():
         key_type = key.rsplit("_", 1)[-1]
@@ -247,6 +248,16 @@ def get_export_channel(guild: discord.Guild) -> discord.TextChannel:
             "Export channel missing. Fix this with /bot set export_channel <channel_id>"
         )
     return export_channel
+
+
+def get_invite_channel(guild: discord.Guild) -> discord.TextChannel:
+    settings = get_settings(guild)
+    invite_channel = guild.get_channel(settings.invite_channel)
+    if invite_channel is None:
+        raise app_commands.AppCommandError(
+            "Invite channel missing. Fix this with /bot set invite_channel <channel_id>"
+        )
+    return invite_channel
 
 
 def _get_category(guild: discord.Guild, category_name: str) -> discord.CategoryChannel:
