@@ -279,6 +279,7 @@ async def done(interaction: discord.Interaction, contributors: str | None):
         478178456329388032: ("😎", "based"),  # Migsej
         209692688415457282: ("🌐", "river"),  # The Mikkel
         158216455035420672: ("🦆", "rubberduck"),  # Quack
+        136128174873509890: ("🐼", "pepeinthesystem"),  # Budji
     }
     msg_emojis = ("🎉", "🎉")
     reaction_emoji = "peepoBrunner"
