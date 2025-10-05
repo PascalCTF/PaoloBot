@@ -113,16 +113,28 @@ async def timer_members(bot, server: discord.Guild, registered_users: list[int])
 
 
 class AttendanceCommands(app_commands.Group):
-    @app_commands.command(name="attendance", description="Keep track of attendance")
+    @app_commands.command(description="Keep track of attendance")
     @app_commands.guild_only
     @app_commands.checks.has_permissions(administrator=True)
-    async def start_attendance(self, interaction: discord.Interaction):
+    async def start(self, interaction: discord.Interaction):
         registered_users = get_registered_users()
         server = interaction.guild
         if not server or not server.voice_channels:
             await interaction.response.send_message("This command cannot be used in DMs or in servers without voice channels.", ephemeral=True)
             return
 
+        if timer_members.is_running():
+            await interaction.response.send_message("The bot is already tracking attendance.", ephemeral=True)
+        else:
+            timer_members.start(self._get_bot(), server, registered_users)
+            await interaction.response.send_message("The bot has started checking student attendance.")
+
+    @app_commands.command(description="Stop tracking attendance")
+    @app_commands.guild_only
+    @app_commands.checks.has_permissions(administrator=True)
+    async def stop(self, interaction: discord.Interaction):
+        registered_users = get_registered_users()
+        server = interaction.guild
         if timer_members.is_running():
             now = datetime.now()
             for vc in server.voice_channels:
@@ -147,10 +159,16 @@ class AttendanceCommands(app_commands.Group):
             members_time.clear()
             members_total_time.clear()
             user_notified.clear()
-            await interaction.response.send_message("The bot has stopped checking student attendance. results available using command /results")
+            results_file : tempfile.NamedTemporaryFile = get_attendance_results_csv(datetime.now().date())
+            try:
+                await interaction.response.send_message(f"Attendance results for {datetime.now().date()}:", file=discord.File(results_file.name))
+            finally:
+                try:
+                    results_file.close()
+                except Exception:
+                    pass
         else:
-            timer_members.start(self._get_bot(), server, registered_users)
-            await interaction.response.send_message("The bot has started checking student attendance.")
+            await interaction.response.send_message("The bot is not currently tracking attendance.", ephemeral=True)
 
     def _get_bot(self):
         # Inspect parent to find client object
@@ -163,17 +181,14 @@ class AttendanceCommands(app_commands.Group):
         except Exception:
             raise RuntimeError("Unable to find bot client")
 
-    @app_commands.command(name="results", description="Get attendance results, optionally for a specific date (format: DD-MM-YYYY)")
+    @app_commands.command(description="Get attendance results for a specific date (format: DD-MM-YYYY)")
     @app_commands.guild_only
-    async def results(self, interaction: discord.Interaction, date: str | None = None):
-        if date:
-            try:
-                date_obj = datetime.strptime(date, "%d-%m-%Y").date()
-            except ValueError:
-                await interaction.response.send_message("Invalid date format. Use DD-MM-YYYY.", ephemeral=True)
-                return
-        else:
-            date_obj = datetime.now().date()
+    async def results(self, interaction: discord.Interaction, date: str):
+        try:
+            date_obj = datetime.strptime(date, "%d-%m-%Y").date()
+        except ValueError:
+            await interaction.response.send_message("Invalid date format. Use DD-MM-YYYY.", ephemeral=True)
+            return
 
         results_file : tempfile.NamedTemporaryFile = get_attendance_results_csv(date_obj)
         try:
@@ -184,7 +199,7 @@ class AttendanceCommands(app_commands.Group):
             except Exception:
                 pass
 
-    @app_commands.command(name="signup", description="Register your name and class")
+    @app_commands.command(description="Register your name and class")
     @app_commands.guild_only
     async def signup(self, interaction: discord.Interaction):
         if not interaction.guild:
