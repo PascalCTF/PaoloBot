@@ -9,8 +9,8 @@ from mongoengine import NotUniqueError
 import matplotlib.pyplot as plt
 from matplotlib.table import Table, Cell
 
-from brunnerbot.models.ctf_category import CtfCategory
-from brunnerbot.utils import (
+from paolobot.models.ctf_category import CtfCategory
+from paolobot.utils import (
     move_channel,
     is_team_admin,
     get_incomplete_category,
@@ -21,10 +21,10 @@ from brunnerbot.utils import (
     get_settings,
     MAX_CHANNELS
 )
-from brunnerbot.modules.ctf import get_ctf_db
+from paolobot.modules.ctf import get_ctf_db
 
-from brunnerbot.models.challenge import Challenge
-from brunnerbot.models.ctf import Ctf
+from paolobot.models.challenge import Challenge
+from paolobot.models.ctf import Ctf
 
 
 async def check_challenge(
@@ -267,27 +267,9 @@ async def done(interaction: discord.Interaction, contributors: str | None):
     await move_channel(interaction.channel, get_complete_category(interaction.guild))
 
     # Special emojis for certain users, otherwise default
-    emojis = {
-        286173785336446978: ("🔥", "firepog"),  # firehawk
-        112158630161158144: ("👊🏼", "noshell"),  # N1z0ku
-        145301884662448128: (("🇳🇴", "🇩🇰"), "chadtor"),  # Victor4X
-        634877910511255575: (("🍋","🌜"), "lightsaberpepe"),  # Anakin
-        174499485014163466: ("🎅🏼", "sirene"),  # Nissen
-        177497812303347713: ("☣️", "toxic"),  # Toxicd
-        556857403883257857: ("🇩🇰", "danish"),  # D4n1sh
-        247728628413104128: ("🇩🇰", "rooWizard"),  # DaWiz
-        478178456329388032: ("😎", "based"),  # Migsej
-        209692688415457282: ("🌐", "river"),  # The Mikkel
-        158216455035420672: ("🦆", "rubberduck"),  # Quack
-        136128174873509890: ("🐼", "pepeinthesystem"),  # Budji
-    }
     msg_emojis = ("🎉", "🎉")
-    reaction_emoji = "peepoBrunner"
-
-    if len(users) == 1 and users[0] in emojis:
-        msg_emojis, reaction_emoji = emojis[users[0]]
-        if type(msg_emojis) is str:
-            msg_emojis = (msg_emojis, msg_emojis)
+    reaction_emoji = "paolo"
+    
     left_emoji, right_emoji = msg_emojis
 
     solvers = " ".join(f"<@!{user}>" for user in users)

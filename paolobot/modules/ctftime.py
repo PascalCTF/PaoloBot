@@ -9,7 +9,7 @@ from dateutil import parser
 from discord import app_commands
 from tabulate import tabulate
 
-from brunnerbot.utils import get_settings
+from paolobot.utils import get_settings
 
 
 class Ctftime(app_commands.Group):

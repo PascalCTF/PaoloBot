@@ -1,12 +1,12 @@
-# BrunnerBot
+# Paolobot
 
 A Discord bot that provides tools for collaboration during CTFs.
 
-Forked from [PsyBot](https://github.com/Myldero/psybot), originally inspired by [fiskebot](https://github.com/ekofiskctf/fiskebot).
+Forked from [Brunnerne](https://github.com/Brunnerne/BrunnerBot) which was forked from [PsyBot](https://github.com/Myldero/psybot), originally inspired by [fiskebot](https://github.com/ekofiskctf/fiskebot).
 
 ## Features
 
-BrunnerBot adds a number of slash commands for easy and effective CTF management and collaboration:
+PaoloBot adds a number of slash commands for easy and effective CTF management and collaboration:
 
 ### CTFs
 
@@ -50,7 +50,7 @@ BrunnerBot adds a number of slash commands for easy and effective CTF management
 
 * `/ctftime team [team] [year]`: See a team's top 10 CTFs
   * Defaults to current year and your team
-  * Set team with `/bot set key:ctftime_team value:Brunnerne`
+  * Set team with `/bot set key:ctftime_team value:Paolo`
 * `/ctftime top [country] [year]`: See the top CTFtime teams
   * Defaults to this year, globally
 * `/ctftime calc <weight> <best_points> <team_points> <team_place> [team]`

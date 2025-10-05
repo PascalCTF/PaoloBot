@@ -9,7 +9,7 @@ from dateutil import parser
 from discord import app_commands
 from discord import ui
 
-from brunnerbot.utils import (
+from paolobot.utils import (
     is_team_admin,
     create_channel,
     move_channel,
@@ -26,12 +26,12 @@ from brunnerbot.utils import (
     sanitize_channel_name,
     MAX_CHANNELS
 )
-from brunnerbot.modules.ctftime import Ctftime
-from brunnerbot.config import config
+from paolobot.modules.ctftime import Ctftime
+from paolobot.config import config
 
-from brunnerbot.models.challenge import Challenge
-from brunnerbot.models.ctf import Ctf
-from brunnerbot.models.invite import Invite
+from paolobot.models.challenge import Challenge
+from paolobot.models.ctf import Ctf
+from paolobot.models.invite import Invite
 
 
 async def get_ctf_db(

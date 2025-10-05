@@ -3,8 +3,8 @@ import re
 import discord
 from discord import app_commands
 
-from brunnerbot.models.backup_category import BackupCategory
-from brunnerbot.models.guild_settings import GuildSettings
+from paolobot.models.backup_category import BackupCategory
+from paolobot.models.guild_settings import GuildSettings
 
 MAX_CHANNELS = 500
 CATEGORY_MAX_CHANNELS = 50

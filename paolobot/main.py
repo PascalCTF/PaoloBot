@@ -7,11 +7,11 @@ import pymongo.errors
 
 from discord import RawReactionActionEvent, app_commands
 
-from brunnerbot.modules import ctf, ctftime, challenge, notes, bot
-from brunnerbot.config import config
-from brunnerbot.database import db
-from brunnerbot.models.invite import Invite
-from brunnerbot.utils import setup_settings
+from paolobot.modules import ctf, ctftime, challenge, notes, bot, attendance
+from paolobot.config import config
+from paolobot.database import db
+from paolobot.models.invite import Invite
+from paolobot.utils import setup_settings
 
 logging.basicConfig(level=logging.INFO)
 
@@ -25,6 +25,7 @@ ctf.add_commands(tree, GUILD_OBJ)
 ctftime.add_commands(tree, GUILD_OBJ)
 notes.add_commands(tree, GUILD_OBJ)
 bot.add_commands(tree, GUILD_OBJ)
+attendance.add_commands(tree, GUILD_OBJ)
 
 
 @client.event

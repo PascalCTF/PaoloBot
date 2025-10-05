@@ -4,7 +4,7 @@ from mongoengine import (
     ReferenceField,
     LongField,
 )
-from brunnerbot.models.ctf import Ctf
+from paolobot.models.ctf import Ctf
 
 
 class Invite(Document):

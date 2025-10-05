@@ -1,14 +1,14 @@
 services:
-  brunnerbot:
+  paolobot:
     build: .
     env_file:
       - ./.env
     environment:
       - "MONGODB_URI=mongo"
-      - "BACKUPS_DIR=/home/brunnerbot/backups"
+      - "BACKUPS_DIR=/home/paolobot/backups"
     restart: unless-stopped
     volumes:
-      - ./backups:/home/brunnerbot/backups
+      - ./backups:/home/paolobot/backups
     depends_on:
       - mongo
   mongo:

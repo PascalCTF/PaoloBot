@@ -7,9 +7,9 @@ import discord
 from diff_match_patch import diff_match_patch
 from discord import app_commands, ui
 
-from brunnerbot.models.challenge import Challenge
-from brunnerbot.models.ctf import Ctf
-from brunnerbot.utils import get_settings
+from paolobot.models.challenge import Challenge
+from paolobot.models.ctf import Ctf
+from paolobot.utils import get_settings
 
 MODAL_NOTE_COLOR = 0x202222
 HEDGEDOC_NOTE_COLOR = 0xA84300

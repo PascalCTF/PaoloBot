@@ -1,6 +1,6 @@
 from mongoengine import connect
 
-from brunnerbot.config import config
+from paolobot.config import config
 
 
 client = connect(db=config.mongodb_db, host=config.mongodb_uri)
