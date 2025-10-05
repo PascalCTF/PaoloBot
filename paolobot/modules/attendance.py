@@ -1,11 +1,10 @@
 from discord.ext import tasks
-from datetime import datetime, timedelta, date as date_cls
+from datetime import datetime, timedelta
 import discord
 from discord import app_commands
 import io
 import csv
 import tempfile
-import os
 
 from paolobot.models.attendance import AttendanceUser, AttendanceRecord
 
@@ -82,7 +81,7 @@ async def send_dms(bot, ids: list[int], server: discord.Guild):
 async def timer_members(bot, server: discord.Guild, registered_users: list[int]):
     now = datetime.now()
     not_registered = set()
-    for vc in server.voice_channels:
+    for vc in server.voice_channels + server.stage_channels:
         if vc not in members_time:
             members_time[vc] = {}
 
@@ -119,7 +118,7 @@ class AttendanceCommands(app_commands.Group):
     async def start(self, interaction: discord.Interaction):
         registered_users = get_registered_users()
         server = interaction.guild
-        if not server or not server.voice_channels:
+        if not server or not (server.voice_channels + server.stage_channels):
             await interaction.response.send_message("This command cannot be used in DMs or in servers without voice channels.", ephemeral=True)
             return
 
@@ -137,7 +136,7 @@ class AttendanceCommands(app_commands.Group):
         server = interaction.guild
         if timer_members.is_running():
             now = datetime.now()
-            for vc in server.voice_channels:
+            for vc in (server.voice_channels + server.stage_channels):
                 if vc not in members_time:
                     members_time[vc] = {}
 
