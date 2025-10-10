@@ -40,7 +40,26 @@ def save_to_db(seconds_map: dict[int, int]) -> None:
             rec.seconds += secs
         rec.save()
 
+def get_status_attendance_csv(target_date: datetime.date) -> tempfile.NamedTemporaryFile:
+    # Build CSV in-memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Name", "Class", "Time"])
+    for uid, secs in members_total_time.items():
+        user = AttendanceUser.objects(discord_id=uid).first()
+        if user is None:
+            continue
+        total = timedelta(seconds=secs)
+        writer.writerow([user.name, user.class_name, str(total)])
+    tmp = tempfile.NamedTemporaryFile(prefix=f"attendance_status_{target_date}_", suffix=".csv", delete=False)
+    try:
+        with open(tmp.name, 'w', encoding='utf-8') as f:
+            f.write(output.getvalue())
+    finally:
+        tmp.close()
+    return tmp
 
+    # Create unique temp file to
 def get_attendance_results_csv(target_date: datetime.date) -> tempfile.NamedTemporaryFile:
     # Build CSV in-memory
     output = io.StringIO()
@@ -77,38 +96,24 @@ async def send_dms(bot, ids: list[int], server: discord.Guild):
     return notified
 
 
-@tasks.loop(seconds=30)
+@tasks.loop(seconds=10)
 async def timer_members(bot, server: discord.Guild, registered_users: list[int]):
-    now = datetime.now()
     not_registered = set()
     for vc in server.voice_channels + server.stage_channels:
-        if vc not in members_time:
-            members_time[vc] = {}
+        if vc == server.afk_channel:
+            continue
 
-        # Users that left
-        for member in list(members_time[vc].keys()):
-            if member.id not in registered_users:
-                not_registered.add(member.id)
-                continue
-
-            if member not in vc.members:
-                if member.id not in members_total_time:
-                    members_total_time[member.id] = 0
-                members_total_time[member.id] += (now - members_time[vc][member]).total_seconds()
-                del members_time[vc][member]
-
-        # New users
         for member in vc.members:
             if member.id not in registered_users:
                 not_registered.add(member.id)
                 continue
-
-            if member not in members_time[vc] and vc is not server.afk_channel:
-                members_time[vc][member] = now
-
-        users_sent = await send_dms(bot, list(not_registered - user_notified), server)
-        for u in users_sent:
-            user_notified.add(u)
+            if member.id not in members_total_time:
+                members_total_time[member.id] = 0
+            members_total_time[member.id] += 10
+    
+    user_sent = await send_dms(bot,list(not_registered - user_notified),server)
+    for u in user_sent:
+        user_notified.add(u)
 
 
 class AttendanceCommands(app_commands.Group):
@@ -136,18 +141,17 @@ class AttendanceCommands(app_commands.Group):
         server = interaction.guild
         if timer_members.is_running():
             now = datetime.now()
-            for vc in (server.voice_channels + server.stage_channels):
-                if vc not in members_time:
-                    members_time[vc] = {}
+        for vc in server.voice_channels + server.stage_channels:
+            if vc == server.afk_channel:
+                continue
 
-                for member in vc.members:
-                    if member.id not in registered_users:
-                        continue
-                    if member.id not in members_total_time:
-                        members_total_time[member.id] = 0
-                    if member in members_time[vc] and vc is not server.afk_channel:
-                        time = (now - members_time[vc][member]).total_seconds()
-                        members_total_time[member.id] += time
+            for member in vc.members:
+                if member.id not in registered_users:
+                    continue
+                
+                if member.id not in members_total_time:
+                    members_total_time[member.id] = 0
+                members_total_time[member.id] += 10
 
             timer_members.stop()
 
@@ -179,6 +183,22 @@ class AttendanceCommands(app_commands.Group):
             return client
         except Exception:
             raise RuntimeError("Unable to find bot client")
+    @app_commands.command(description="Check if the bot is currently tracking attendance")
+    @app_commands.guild_only
+    @app_commands.checks.has_permissions(administrator=True)
+    async def status(self, interaction: discord.Interaction):
+        if timer_members.is_running():
+            results_file : tempfile.NamedTemporaryFile = get_status_attendance_csv(datetime.now().date())
+            try:
+                await interaction.response.send_message(f"Current attendance status for {datetime.now().date()}:", file=discord.File(results_file.name))
+            finally:
+                try:
+                    results_file.close()
+                except Exception:
+                    pass
+        else:
+            await interaction.response.send_message("The bot is not currently tracking attendance.")
+
 
     @app_commands.command(description="Get attendance results for a specific date (format: DD-MM-YYYY)")
     @app_commands.guild_only
@@ -197,6 +217,8 @@ class AttendanceCommands(app_commands.Group):
                 results_file.close()
             except Exception:
                 pass
+
+    
 
     @app_commands.command(description="Register your name and class")
     @app_commands.guild_only
